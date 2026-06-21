@@ -1,0 +1,2092 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📋 随手记</title>
+<style>
+  :root {
+    --bg: #faf8f5;
+    --card: #ffffff;
+    --text: #3c3c3c;
+    --muted: #9e9e9e;
+    --accent: #6c9bd2;
+    --accent-soft: #e8f0fa;
+    --danger: #e08080;
+    --danger-soft: #fce8e8;
+    --done: #b0b0b0;
+    --line: #ebe5df;
+    --shadow: 0 1px 3px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.04);
+    --shadow-lg: 0 8px 32px rgba(0,0,0,.12);
+    --notebook-bg: #f9f7f2;
+    --radius: 14px;
+    --font: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  }
+
+  /* ── 暗黑模式 ── */
+  body.dark { --bg: #1e1e22; --card: #2a2a30; --text: #d4d4d4; --muted: #8a8a8a;
+    --accent: #7eb8da; --accent-soft: #2d3a48; --danger: #e08888; --danger-soft: #3d2828;
+    --done: #6a6a6a; --line: #3a3a40; --today-glow: #2a2a30;
+    --shadow: 0 1px 3px rgba(0,0,0,.3), 0 4px 16px rgba(0,0,0,.2);
+    --shadow-lg: 0 8px 32px rgba(0,0,0,.4);
+    --notebook-bg: #262630; }
+  body.dark .prev-days-title { color: #7a7a7a; }
+  body.dark .center-title { color: #d4d4d4; }
+  body.dark .date-header .date-big { color: #d4d4d4; }
+  body.dark .right-section-title { color: #d4d4d4; }
+  body.dark .right-section-title:hover { background: rgba(255,255,255,.04); }
+  body.dark .date-arrow:hover { background: #3a3a40; }
+  body.dark .btn-cal-toggle:hover { background: #3a3a40; }
+  body.dark .pc-btn:hover { background: #3a3a40; }
+  body.dark .cal-nav-btn:hover { background: #3a3a40; }
+  body.dark .cal-cell:hover { background: #3a3a40; }
+  body.dark .nb-item:hover { box-shadow: 0 2px 6px rgba(0,0,0,.3); background: #303038; }
+  body.dark .prev-day-group:hover { box-shadow: 0 2px 6px rgba(0,0,0,.3); }
+  body.dark .task-item:hover { box-shadow: 0 2px 6px rgba(0,0,0,.3); }
+  body.dark .whisper-side-item:hover { box-shadow: 0 2px 6px rgba(0,0,0,.3); background: #303038; }
+  body.dark .whisper-cloud { background: #2a2a30; }
+  body.dark .kbd-hint kbd { background: #3a3a40; border-color: #4a4a50; }
+  body.dark .auth-card input { background: #1e1e22; }
+  body.dark .auth-select { background: #1e1e22; }
+  body.dark .modal-actions .btn-cancel:hover { background: #3a3a40; }
+  body.dark .date-header .date-big:hover { background: #3a3a40; }
+  body.dark .cal-drop-title:hover { background: #3a3a40; }
+  body.dark .add-bar input[type="text"] { color: var(--text); }
+  body.dark .task-item.overdue { background: #2f2a20; }
+  body.dark .prev-day-group { box-shadow: 0 1px 2px rgba(0,0,0,.2); }
+  body.dark .pc-item:hover { background: #303038; }
+  body.dark .auth-card .btn-eye:hover { background: #3a3a40; }
+  body.dark .task-num { color: #6a6a6a; }
+  body.dark .prev-num { color: #6a6a6a; }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 24px 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── 三栏布局 ── */
+  .stage {
+    width: 100%;
+    max-width: 620px;
+    margin: 0 auto;
+    padding-top: 30px;
+  }
+
+  /* ── 左侧面板（固定左上角）── */
+  .left-main { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; }
+  .left-panel {
+    position: fixed;
+    top: 24px;
+    left: 24px;
+    bottom: 24px;
+    width: clamp(220px, 22vw, 320px);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 101;
+    user-select: none;
+  }
+  .date-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    position: relative;
+  }
+  .date-header .date-big {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -.3px;
+    padding: 2px 8px;
+    border-radius: 8px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .date-arrow {
+    width: 38px; height: 38px;
+    border: none; border-radius: 50%;
+    background: var(--card);
+    color: var(--text);
+    font-size: 18px;
+    cursor: pointer;
+    box-shadow: var(--shadow);
+    transition: all .15s;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .date-arrow:hover { background: #f0ece6; }
+  .date-arrow:active { transform: scale(.94); }
+
+  .btn-cal-toggle {
+    width: 38px; height: 38px;
+    border: none; border-radius: 50%;
+    background: var(--card);
+    font-size: 18px;
+    cursor: pointer;
+    box-shadow: var(--shadow);
+    transition: all .15s;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .btn-cal-toggle:hover { background: var(--accent-soft); }
+  .btn-cal-toggle:active { transform: scale(.94); }
+  .btn-cal-toggle.active { background: var(--accent-soft); }
+
+  /* 日历下拉 */
+  .calendar-dropdown {
+    display: none;
+    position: absolute;
+    top: 44px;
+    left: 0;
+    width: clamp(260px, 26vw, 380px);
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-lg);
+    z-index: 101;
+    padding: 12px 14px 10px;
+    animation: dropIn .18s ease;
+  }
+  .calendar-dropdown.show { display: block; }
+  @keyframes dropIn {
+    from { opacity:0; transform: translateY(-6px); }
+    to   { opacity:1; transform: translateY(0); }
+  }
+  .cal-drop-header {
+    display: flex; align-items: center; justify-content: center; gap: 4px; margin-bottom: 8px;
+  }
+  .cal-drop-btn {
+    width: 28px; height: 28px;
+    border: none; border-radius: 50%;
+    background: transparent; color: var(--text); font-size: 13px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: background .12s; font-family: var(--font);
+  }
+  .cal-drop-btn:hover { background: #f0ece6; }
+  .cal-drop-btn.year-btn { font-size: 10px; letter-spacing: -1px; }
+  .cal-drop-title {
+    font-size: 14px; font-weight: 700; min-width: 100px; text-align: center;
+    cursor: pointer; padding: 2px 6px; border-radius: 5px;
+  }
+  .cal-drop-title:hover { background: #f5f2ed; }
+  .cal-drop-weekdays {
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    text-align: center; font-size: 11px; font-weight: 600; color: var(--muted);
+    padding-bottom: 4px; margin-bottom: 2px; border-bottom: 1px solid var(--line);
+  }
+  .cal-drop-weekdays .wend { color: #c9a0a0; }
+  .cal-drop-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; }
+  .cal-drop-cell {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    aspect-ratio: 1/1; border-radius: 6px; cursor: pointer;
+    transition: background .12s; font-size: 13px; color: var(--text); min-height: 0;
+  }
+  .cal-drop-cell:hover { background: #f5f2ed; }
+  .cal-drop-cell.other-month { color: #d0cdc8; cursor: default; }
+  .cal-drop-cell.other-month:hover { background: transparent; }
+  .cal-drop-cell.today .cal-drop-day {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: var(--accent); color: #fff;
+    display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px;
+  }
+  .cal-drop-cell.selected { background: var(--accent-soft); }
+  .cal-drop-cell.selected.today .cal-drop-day { box-shadow: 0 0 0 3px var(--accent-soft); }
+  .cal-drop-dot {
+    width: 5px; height: 5px; border-radius: 50%; background: var(--accent);
+    margin-top: 2px; opacity: .85;
+  }
+  .cal-drop-dot.done { background: #7dbf8c; }
+  .cal-drop-cell.other-month .cal-drop-dot { display: none; }
+
+  /* 左侧主区域（日历+往日回顾） */
+  .left-main {
+    flex: 1 1 0; display: flex; flex-direction: column; min-height: 0;
+  }
+  /* 往日回顾 */
+  .prev-days {
+    display: flex; flex-direction: column; gap: 8px;
+    flex: 1 1 0; min-height: 0; overflow-y: auto;
+  }
+
+  /* 个人中心 */
+  .pc-bar {
+    flex-shrink: 0;
+    display: flex; align-items: center; gap: 6px;
+    padding: 4px 0;
+  }
+  .pc-btn {
+    width: 38px; height: 38px;
+    border: none; border-radius: 50%;
+    background: var(--card);
+    color: var(--text);
+    font-size: 20px;
+    cursor: pointer;
+    box-shadow: var(--shadow);
+    transition: all .15s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .pc-btn:hover { background: #f0ece6; }
+  .pc-label {
+    font-size: 12px; color: var(--text); font-weight: 600;
+    cursor: pointer; user-select: none;
+  }
+  .pc-panel {
+    background: var(--card);
+    border-radius: 14px;
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+  }
+  .pc-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 18px; font-size: 14px; color: var(--text);
+    cursor: pointer; transition: background .12s;
+    border-bottom: 1px solid var(--line);
+  }
+  .pc-item:last-child { border-bottom: none; }
+  .pc-item:hover { background: #f9f8f5; }
+  .pc-item .pc-icon { margin-right: 10px; font-size: 16px; }
+  .pc-item .pc-arrow { color: var(--muted); font-size: 12px; }
+  .pc-item.danger { color: var(--danger); }
+  .prev-days-title {
+    font-size: 12px; font-weight: 600; color: #b5b0a8;
+    letter-spacing: .5px; padding: 0 2px;
+    position: sticky; top: 0; background: var(--bg);
+    z-index: 1; padding-bottom: 6px;
+  }
+  .prev-day-group {
+    background: var(--card); border-radius: 8px; padding: 8px 10px;
+    box-shadow: 0 1px 2px rgba(0,0,0,.03); transition: all .15s;
+    cursor: pointer;
+  }
+  .prev-day-group:hover { box-shadow: 0 2px 6px rgba(0,0,0,.06); }
+  .prev-day-label { font-size: 11px; font-weight: 600; color: var(--muted); margin-bottom: 4px; letter-spacing: .2px; }
+  .prev-task {
+    display: flex; align-items: flex-start; gap: 6px; font-size: 13px;
+    color: var(--text); line-height: 1.45; padding: 2px 0; word-break: break-word;
+  }
+  .prev-check { flex-shrink: 0; margin-top: 2px; font-size: 13px; }
+  .prev-check.done { color: var(--accent); }
+  .prev-check.undone { color: #d5d5d5; }
+  .prev-text { flex: 1; }
+  .prev-text.strikethrough { text-decoration: line-through; color: var(--done); }
+  .prev-num {
+    font-size: 11px; font-weight: 600; color: #d5d5d5;
+    min-width: 16px; text-align: center; flex-shrink: 0; margin-top: 2px;
+  }
+  .prev-action-bar {
+    display: inline-flex; align-items: center; gap: 2px;
+    flex-shrink: 0; margin-left: auto;
+  }
+  .prev-overdue { font-size: 10px; color: #e0a050; font-weight: 600; white-space: nowrap; }
+  .btn-defer {
+    flex-shrink: 0; border: none; background: transparent; color: var(--accent);
+    font-size: 11px; font-weight: 600; cursor: pointer; padding: 2px 6px;
+    border-radius: 4px; transition: all .12s; font-family: var(--font); white-space: nowrap;
+  }
+  .btn-defer:hover { background: var(--accent-soft); }
+  .btn-defer:active { transform: scale(.94); }
+
+  /* ── 中间主区 ── */
+  .center-panel {
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  .center-title {
+    font-size: 28px; font-weight: 700; letter-spacing: -.3px;
+    color: #3c3c3c; text-align: center;
+  }
+  .add-bar {
+    display: flex; gap: 6px;
+    background: var(--card); padding: 5px;
+    border-radius: 12px; box-shadow: var(--shadow);
+  }
+  .add-bar input[type="text"] {
+    flex: 1; border: none; outline: none; font-size: 14px;
+    padding: 9px 6px 9px 12px; font-family: var(--font);
+    color: var(--text); background: transparent;
+  }
+  .add-bar input[type="text"]::placeholder { color: #c5c5c5; }
+  .btn-add {
+    border: none; background: var(--accent); color: #fff;
+    font-size: 13px; font-weight: 600; padding: 9px 16px;
+    border-radius: 9px; cursor: pointer; transition: all .15s;
+    white-space: nowrap; font-family: var(--font);
+  }
+  .btn-add:hover { opacity: .88; }
+  .btn-add:active { transform: scale(.96); }
+
+  .task-list {
+    display: flex; flex-direction: column; gap: 4px;
+    min-height: 60px; flex: 1 1 auto; overflow-y: auto;
+  }
+  .task-item {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--card); padding: 10px 12px;
+    border-radius: 9px; box-shadow: 0 1px 2px rgba(0,0,0,.04);
+    transition: all .2s; animation: slideIn .2s ease both;
+  }
+  @keyframes slideIn {
+    from { opacity:0; transform: translateY(-6px); }
+    to   { opacity:1; transform: translateY(0); }
+  }
+  .task-item:hover { box-shadow: 0 2px 6px rgba(0,0,0,.06); }
+  .task-item.done { opacity: .55; }
+  .task-item.done .task-text { text-decoration: line-through; color: var(--done); }
+  .task-num {
+    font-size: 12px; font-weight: 600; color: #c5c5c5;
+    min-width: 18px; text-align: center; flex-shrink: 0;
+  }
+  .task-item.done .task-num { color: #dcdcdc; }
+  .task-check {
+    appearance: none; width: 20px; height: 20px;
+    border: 2px solid #d0d0d0; border-radius: 50%;
+    cursor: pointer; flex-shrink: 0; transition: all .15s; position: relative;
+  }
+  .task-check:checked { background: var(--accent); border-color: var(--accent); }
+  .task-check:checked::after {
+    content:''; position: absolute; left:5px; top:2px;
+    width:6px; height:10px; border: solid #fff; border-width:0 2px 2px 0; transform:rotate(45deg);
+  }
+  .task-text { flex:1; font-size:14px; cursor:default; word-break:break-word; }
+  .task-meta { font-size:10px; color:var(--muted); white-space:nowrap; }
+  .btn-delete {
+    width:26px; height:26px; border:none; border-radius:50%;
+    background:transparent; color:#c5c5c5; font-size:14px;
+    cursor:pointer; flex-shrink:0; transition:all .15s;
+    display: flex; align-items:center; justify-content:center; line-height:1;
+  }
+  .btn-delete:hover { background: var(--danger-soft); color: var(--danger); }
+  .btn-delete:active { transform: scale(.88); }
+
+  /* 记录本列表项上的编辑/删除按钮 */
+  .btn-nb-edit, .btn-nb-delete {
+    width:22px; height:22px; border:none; border-radius:50%;
+    background:transparent; color:#d0d0d0; font-size:12px;
+    cursor:pointer; flex-shrink:0; transition:all .12s;
+    display: flex; align-items:center; justify-content:center;
+    opacity:0;
+  }
+  .btn-nb-edit { margin-left: auto; }
+  .nb-item:hover .btn-nb-edit, .nb-item:hover .btn-nb-delete { opacity:1; }
+  .btn-nb-edit:hover { background: var(--accent-soft); color: var(--accent); }
+  .btn-nb-delete:hover { background: var(--danger-soft); color: var(--danger); }
+
+  .empty-state { text-align:center; padding:28px 20px; color:#c8c5c0; }
+  .empty-state .emoji { font-size:36px; margin-bottom:6px; }
+  .empty-state .msg { font-size:13px; }
+  .stats-bar {
+    display:flex; justify-content:center; align-items:center; gap:16px;
+    font-size:12px; color:var(--muted); padding:2px 0; flex-shrink:0;
+  }
+  .stats-bar .stat-num { font-size:20px; font-weight:700; color:var(--accent); }
+  .kbd-hint { text-align:center; font-size:10px; color:#d0cdc8; }
+  .kbd-hint kbd {
+    background:#f0ece6; padding:1px 5px; border-radius:3px;
+    font-size:10px; border:1px solid #e0dcd6;
+  }
+  .cal-overlay {
+    display:none; position:fixed; inset:0; z-index:99; background:rgba(0,0,0,.03);
+  }
+  .cal-overlay.show { display:block; }
+
+  /* ── 新建记录本弹窗 ── */
+  .modal-overlay {
+    display:none; position:fixed; inset:0; z-index:200;
+    background: rgba(0,0,0,.08);
+    justify-content: center; align-items: center;
+  }
+  .modal-overlay.show { display:flex; }
+  .modal-box {
+    background: var(--card);
+    border-radius: 16px;
+    padding: 28px 32px 22px;
+    box-shadow: 0 12px 48px rgba(0,0,0,.1);
+    width: 340px; max-width: 90vw;
+    animation: modalIn .2s ease;
+  }
+  @keyframes modalIn {
+    from { opacity:0; transform: translateY(-12px) scale(.97); }
+    to   { opacity:1; transform: translateY(0) scale(1); }
+  }
+  .modal-box .modal-title {
+    font-size: 17px; font-weight: 700; color: var(--text);
+    margin-bottom: 16px; text-align: center;
+  }
+  .modal-box input {
+    width: 100%; border: 2px solid var(--line); border-radius: 10px;
+    padding: 10px 14px; font-size: 15px; font-family: var(--font);
+    color: var(--text); outline: none; background: var(--bg);
+  }
+  .modal-box input:focus { border-color: var(--accent); }
+  .modal-box input::placeholder { color: #c5c5c5; }
+  .modal-actions {
+    display: flex; gap: 8px; margin-top: 16px; justify-content: flex-end;
+  }
+  .modal-actions.centered { justify-content: center; }
+  .modal-actions button {
+    border: none; border-radius: 8px; padding: 9px 20px;
+    font-size: 14px; font-weight: 600; cursor: pointer;
+    transition: all .15s; font-family: var(--font);
+  }
+  .modal-actions .btn-cancel {
+    background: transparent; color: var(--muted);
+  }
+  .modal-actions .btn-cancel:hover { background: #f0ece6; }
+  .modal-actions .btn-confirm {
+    background: var(--accent); color: #fff;
+  }
+  .modal-actions .btn-confirm:hover { opacity: .88; }
+  .modal-actions .btn-confirm.danger {
+    background: var(--danger);
+  }
+
+  /* ── 右侧面板：记录本 + 心里话（固定右上角）── */
+  .right-panel {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    bottom: 24px;
+    width: clamp(190px, 20vw, 280px);
+    display: flex; flex-direction: column; gap: 0;
+    z-index: 50;
+  }
+  .right-section-top {
+    flex: 1 1 50%;
+    display: flex; flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .right-section-bottom {
+    flex: 1 1 50%;
+    display: flex; flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .right-section-title {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -.3px;
+    color: #3c3c3c;
+    padding: 4px 8px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+    cursor: pointer;
+    transition: background .12s;
+  }
+  .right-section-title:hover { background: rgba(0,0,0,.03); }
+  .right-section-title.active { color: var(--accent); }
+  .right-section-body {
+    overflow-y: auto;
+    display: flex; flex-direction: column;
+    gap: 4px;
+    margin-top: 4px;
+    padding-right: 2px;
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+  .divider {
+    height: 1px;
+    background: var(--line);
+    margin: 8px 0;
+    flex-shrink: 0;
+  }
+  .btn-nb-create {
+    width: 26px; height: 26px;
+    border: none; border-radius: 50%;
+    background: var(--card);
+    color: var(--accent);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: var(--shadow);
+    transition: all .15s;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .btn-nb-create:hover { background: var(--accent-soft); }
+  .btn-nb-create:active { transform: scale(.94); }
+
+  /* 心里话侧边栏小卡片 */
+  .whisper-side-item {
+    display: flex; align-items: center; gap: 6px;
+    padding: 9px 12px; border-radius: 8px;
+    cursor: pointer; transition: all .12s;
+    font-size: 14px; color: var(--text);
+    background: var(--card);
+    box-shadow: 0 1px 2px rgba(0,0,0,.03);
+  }
+  .whisper-side-item:hover { box-shadow: 0 2px 6px rgba(0,0,0,.06); background: #fdfcf9; }
+  .whisper-side-item.active { background: var(--accent-soft); font-weight: 600; }
+  .whisper-side-item .ws-name { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+  /* 心里话云朵卡片 */
+  .whisper-cloud {
+    background: #f6f4f0;
+    border-radius: 24px 24px 24px 6px;
+    padding: 16px 18px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.04);
+    position: relative;
+    transition: all .15s;
+    animation: slideIn .2s ease both;
+  }
+  .whisper-cloud:hover { box-shadow: 0 3px 12px rgba(0,0,0,.07); }
+  .whisper-cloud .wc-title {
+    font-size: 14px; font-weight: 600; color: var(--text);
+    margin-bottom: 6px;
+  }
+  .whisper-cloud .wc-body {
+    font-size: 13px; color: #666; line-height: 1.6;
+    white-space: pre-wrap; word-break: break-word;
+  }
+  .whisper-cloud .wc-date {
+    font-size: 10px; color: var(--muted); margin-top: 8px;
+  }
+  .whisper-cloud .wc-actions {
+    position: absolute; top: 12px; right: 14px;
+    display: flex; gap: 4px; opacity: 0; transition: opacity .15s;
+  }
+  .whisper-cloud:hover .wc-actions { opacity: 1; }
+  .wc-actions button {
+    border: none; border-radius: 6px; padding: 3px 8px;
+    font-size: 11px; font-family: var(--font); cursor: pointer;
+    background: var(--card); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,.06);
+    transition: all .12s;
+  }
+  .wc-actions button:hover { background: var(--danger-soft); color: var(--danger); }
+
+  /* 心里话编辑器 */
+  .whisper-edit {
+    width: 100%; display: flex; flex-direction: column; gap: 8px;
+    margin-bottom: 12px;
+  }
+  .whisper-edit input {
+    width: 100%; border: 2px solid var(--line); border-radius: 10px;
+    padding: 10px 14px; font-size: 14px; font-family: var(--font);
+    color: var(--text); outline: none; background: var(--card);
+    text-align: center;
+  }
+  .whisper-edit input:focus { border-color: var(--accent); }
+  .whisper-edit input::placeholder { color: #c5c5c5; }
+  .whisper-edit textarea {
+    width: 100%; min-height: calc(100vh - 260px); border: 2px solid var(--line);
+    border-radius: 10px; padding: 12px 14px; font-size: 14px;
+    font-family: var(--font); color: var(--text); outline: none;
+    background: var(--card); resize: none; line-height: 1.6;
+  }
+  .whisper-edit textarea:focus { border-color: var(--accent); }
+  .whisper-edit .we-row {
+    display: flex; gap: 6px; justify-content: center;
+  }
+  .whisper-edit .we-row button {
+    border: none; border-radius: 8px; padding: 8px 18px;
+    font-size: 13px; font-weight: 600; cursor: pointer;
+    font-family: var(--font); transition: all .15s;
+  }
+  .whisper-edit .we-cancel { background: transparent; color: var(--muted); }
+  .whisper-edit .we-cancel:hover { background: #f0ece6; }
+  .whisper-edit .we-save { background: var(--accent); color: #fff; }
+  .whisper-edit .we-save:hover { opacity: .88; }
+  .nb-list { display: flex; flex-direction: column; gap: 4px; }
+  .nb-item {
+    display: flex; align-items: center; gap: 6px;
+    padding: 9px 12px; border-radius: 8px;
+    cursor: pointer; transition: all .12s;
+    font-size: 14px; color: var(--text);
+    background: var(--card); box-shadow: 0 1px 2px rgba(0,0,0,.03);
+  }
+  .nb-item:hover { box-shadow: 0 2px 6px rgba(0,0,0,.06); background: #fdfcf9; }
+  .nb-item.active { background: var(--accent-soft); font-weight: 600; }
+  .nb-item .nb-icon { flex-shrink: 0; }
+  .nb-item .nb-name { flex:1; word-break: break-word; }
+  .nb-item .nb-count {
+    font-size: 10px; color: var(--muted); flex-shrink: 0;
+  }
+  /* ── 响应式 ── */
+  @media (max-width: 900px) {
+    .left-main { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; }
+  .left-panel { top: 10px; left: 8px; bottom: 10px; width: clamp(180px, 70vw, 300px); }
+    .left-panel .date-big { font-size: 20px; }
+    .prev-days { flex: 1 1 auto; }
+    .right-panel { display: none; }
+    .right-section-title { font-size: 16px; }
+    .center-title { font-size: 22px; }
+    .calendar-dropdown { left: -10px; width: calc(100vw - 24px); max-width: 340px; }
+    .add-bar { flex-wrap: wrap; }
+    .btn-add { width: 100%; }
+    .stage { max-width: 100%; padding: 30px 12px 0; }
+  }
+
+  /* ── 密码登录遮罩 ── */
+  .auth-mask {
+    position: fixed; inset: 0; z-index: 300;
+    background: var(--bg);
+    display: flex; justify-content: center; align-items: center;
+  }
+  .auth-mask.hidden { display: none; }
+  .auth-card {
+    background: var(--card); border-radius: 16px; padding: 36px 32px 28px;
+    box-shadow: 0 8px 40px rgba(0,0,0,.08); width: 360px; max-width: 90vw;
+    text-align: center;
+  }
+  .auth-card h2 { font-size: 22px; font-weight: 700; margin-bottom: 4px; color: var(--text); }
+  .auth-card .auth-sub { font-size: 13px; color: var(--muted); margin-bottom: 16px; }
+  .auth-card .auth-tabs { display: flex; gap: 0; margin-bottom: 18px; border-radius: 10px; overflow: hidden; border: 2px solid var(--line); }
+  .auth-card .auth-tabs.hidden { display: none; }
+  .auth-tab { flex: 1; text-align: center; padding: 8px 0; font-size: 14px; font-weight: 600; cursor: pointer; color: var(--muted); background: transparent; transition: all .15s; user-select: none; }
+  .auth-tab.active { background: var(--accent); color: #fff; }
+  .auth-card .auth-sub { font-size: 13px; color: var(--muted); margin-bottom: 16px; }
+  .auth-card input {
+    width: 100%; border: 2px solid var(--line); border-radius: 10px;
+    padding: 12px 16px; font-size: 15px; font-family: var(--font);
+    color: var(--text); outline: none; background: var(--bg); text-align: center;
+  }
+  .auth-card input:focus { border-color: var(--accent); }
+  .auth-field-label {
+    display: flex; align-items: center; gap: 8px;
+  }
+  .auth-field-label .auth-label {
+    font-size: 14px; font-weight: 600; color: var(--text);
+    white-space: nowrap; flex-shrink: 0;
+  }
+  .auth-select-wrap {
+    position: relative; flex: 1;
+  }
+  .auth-select-wrap::after {
+    content: '▼'; position: absolute; right: 16px; top: 50%;
+    transform: translateY(-50%); font-size: 10px; color: var(--muted);
+    pointer-events: none;
+  }
+  .auth-select {
+    width: 100%; border: 2px solid var(--line); border-radius: 10px;
+    padding: 11px 40px 11px 16px; font-size: 15px; font-family: var(--font);
+    color: var(--text); outline: none; background: var(--bg);
+    cursor: pointer; text-align: center; text-align-last: center;
+    -webkit-appearance: none; appearance: none;
+  }
+  .auth-select:focus { border-color: var(--accent); }
+  .auth-card .pwd-wrap {
+    position: relative; margin-bottom: 0;
+  }
+  .auth-card .pwd-wrap input {
+    flex: 1; padding-right: 42px; text-align: left;
+  }
+  .auth-card .btn-eye {
+    position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
+    width: 34px; height: 34px; border: none; border-radius: 50%;
+    background: transparent; color: #b5b5b5; font-size: 16px;
+    cursor: pointer; transition: all .12s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .auth-card .btn-eye:hover { background: #f0ece6; color: var(--text); }
+  .auth-field-row { margin-bottom: 10px; }
+  .auth-card .auth-btns { display: flex; gap: 8px; margin-top: 16px; justify-content: center; }
+  .auth-card .auth-btns button {
+    border: none; border-radius: 8px; padding: 10px 24px;
+    font-size: 14px; font-weight: 600; cursor: pointer;
+    transition: all .15s; font-family: var(--font);
+  }
+  .auth-card .btn-cancel { background: transparent; color: var(--muted); }
+  .auth-card .btn-cancel:hover { background: #f0ece6; }
+  .auth-card .btn-confirm { background: var(--accent); color: #fff; }
+  .auth-card .btn-confirm:hover { opacity: .88; }
+  .auth-card .auth-err { font-size: 12px; color: var(--danger); margin-top: 10px; min-height: 18px; }
+
+  /* ── 新手指引 ── */
+  .tour-mask {
+    position: fixed; inset: 0; z-index: 250;
+    background: rgba(0,0,0,.45);
+    display: none;
+  }
+  .tour-highlight {
+    position: fixed; z-index: 251; border-radius: 16px;
+    box-shadow: 0 0 0 9999px rgba(0,0,0,.45);
+    pointer-events: none; background: transparent; display: none;
+  }
+  .tour-tip {
+    position: fixed; z-index: 252;
+    background: var(--card); border-radius: 14px;
+    padding: 24px 28px; box-shadow: 0 8px 32px rgba(0,0,0,.12);
+    text-align: center; max-width: 440px; display: none;
+    overflow-y: auto; max-height: 90vh;
+  }
+  .tour-tip .tour-icon { font-size: 40px; margin-bottom: 8px; }
+  .tour-tip .tour-title { font-size: 17px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+  .tour-tip .tour-text { font-size: 13px; color: var(--muted); margin-bottom: 16px; line-height: 1.7; text-align: left; }
+  .tour-tip .tour-btns { display: flex; gap: 6px; justify-content: center; }
+  .tour-tip .tour-btns button {
+    border: none; border-radius: 8px; padding: 8px 20px;
+    font-size: 13px; font-weight: 600; cursor: pointer;
+    transition: all .15s; font-family: var(--font);
+  }
+  .tour-tip .btn-prev { background: transparent; color: var(--muted); }
+  .tour-tip .btn-prev:hover { background: #f0ece6; }
+  .tour-tip .btn-skip { background: transparent; color: var(--muted); }
+  .tour-tip .btn-skip:hover { background: #f0ece6; }
+  .tour-tip .btn-next { background: var(--accent); color: #fff; }
+  .tour-tip .btn-next:hover { opacity: .88; }
+</style>
+</head>
+<body>
+
+<!-- 密码登录遮罩 -->
+<div class="auth-mask" id="authMask">
+  <div class="auth-card">
+    <h2 id="authTitle">&#x1f510; 随手记</h2>
+    <div class="auth-sub" id="authSub"></div>
+    <div class="auth-tabs" id="authTabs">
+      <span class="auth-tab active" data-tab="login">登录</span>
+      <span class="auth-tab" data-tab="register">注册</span>
+    </div>
+    <div id="authFields"></div>
+    <div class="auth-err" id="authErr"></div>
+    <div class="auth-btns">
+      <button class="btn-confirm" id="authBtn">登录</button>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- 新手指引 -->
+<div class="tour-mask" id="tourMask"></div>
+<div class="tour-highlight" id="tourHL"></div>
+<div class="tour-tip" id="tourTip">
+  <div class="tour-icon" id="tourIcon"></div>
+  <div class="tour-title" id="tourTitle"></div>
+  <div class="tour-text" id="tourText"></div>
+  <div class="tour-btns">
+    <button class="btn-prev" id="tourPrev">上一步</button>
+    <button class="btn-skip" id="tourSkip">跳过</button>
+    <button class="btn-next" id="tourNext">下一步</button>
+  </div>
+</div>
+
+<!-- 遮罩层 -->
+<div class="cal-overlay" id="calOverlay"></div>
+
+<div class="stage">
+
+  <!-- ────── 左侧面板 ────── -->
+  <div class="left-panel">
+    <div class="left-main" id="leftMain">
+      <div class="date-header" id="dateHeader">
+        <button class="date-arrow" id="btnPrev" title="前一天">◂</button>
+        <span class="date-big" id="dateBig"></span>
+        <button class="date-arrow" id="btnNext" title="后一天">▸</button>
+        <button class="btn-cal-toggle" id="btnCalToggle" title="展开日历">📅</button>
+
+      <div class="calendar-dropdown" id="calendarDropdown">
+        <div class="cal-drop-header">
+          <button class="cal-drop-btn year-btn" id="btnDropPrevYear" title="上一年">◂◂</button>
+          <button class="cal-drop-btn" id="btnDropPrevMonth" title="上个月">◂</button>
+          <span class="cal-drop-title" id="calDropTitle"></span>
+          <button class="cal-drop-btn" id="btnDropNextMonth" title="下个月">▸</button>
+          <button class="cal-drop-btn year-btn" id="btnDropNextYear" title="下一年">▸▸</button>
+        </div>
+        <div class="cal-drop-weekdays">
+          <span class="wend">日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span class="wend">六</span>
+        </div>
+        <div class="cal-drop-grid" id="calDropGrid"></div>
+      </div>
+    </div>
+
+    <div class="prev-days" id="prevDays"></div>
+    </div>
+    <div class="pc-bar">
+      <button class="pc-btn" id="btnPC" title="个人中心">⚙</button>
+      <span class="pc-label" id="pcLabel" onclick="document.getElementById('btnPC').click()">个人中心</span>
+    </div>
+  </div>
+
+  <!-- ────── 中间主区 ────── -->
+  <div class="center-panel">
+    <div class="center-title" id="centerTitle">📋 每日计划</div>
+    <div class="add-bar" id="add-bar">
+      <input type="text" id="inputTask" placeholder="输入要做的事…" maxlength="200">
+      <button class="btn-add" id="btnAdd">＋ 添加</button>
+    </div>
+    <div class="task-list" id="taskList"></div>
+    <div class="empty-state" id="emptyState">
+      <div class="emoji">☕</div>
+      <div class="msg" id="emptyMsg">这天还没有计划，写点什么吧</div>
+    </div>
+    <div class="stats-bar" id="statsBar" style="display:none">
+      <div><span class="stat-num" id="statDone">0</span> <span id="statDoneLabel">已完成</span></div>
+      <div style="color:#ddd">|</div>
+      <div><span class="stat-num" id="statTotal">0</span> <span id="statTotalLabel">共</span></div>
+      <div style="color:#ddd">|</div>
+      <div><span id="statRateLabel">完成率</span> <span class="stat-num" id="statRate" style="font-size:17px">–</span></div>
+    </div>
+    <div class="kbd-hint">
+      点 <kbd>📅</kbd> 打开月历 · 滚轮翻日 · 点 <kbd>✕</kbd> 删除 · 自动保存
+    </div>
+  </div>
+
+  <!-- ────── 右侧面板：记录本 + 心里话 ────── -->
+  <div class="right-panel">
+    <!-- 记录本 -->
+    <div class="right-section-top">
+      <div class="right-section-title" id="nbTitle">
+        📒 记录本
+        <button class="btn-nb-create" id="btnNbCreate" title="新建记录本">＋</button>
+      </div>
+      <div class="right-section-body nb-list" id="nbList"></div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- 心里话 -->
+    <div class="right-section-bottom">
+      <div class="right-section-title" id="whisperTitle">
+        💭 心里话
+        <button class="btn-nb-create" id="btnWhisperCreate" title="新建心里话">＋</button>
+      </div>
+      <div class="right-section-body" id="whisperSideList"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- 通用弹窗 -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-box" id="modalBox"></div>
+</div>
+
+<script>
+  // ── 工具函数 ──
+  const PLAN_KEY = 'daily_planner_tasks';
+  const NB_KEY = 'daily_planner_notebooks';
+  const WHISPER_DATA_KEY = 'daily_planner_whisper_data';
+
+  function todayStr() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+  function formatDate(dateStr) {
+    const d = new Date(dateStr + 'T00:00:00');
+    const w = [_t('sun'),_t('mon'),_t('tue'),_t('wed'),_t('thu'),_t('fri'),_t('sat')];
+    if (getLang() === 'en') {
+      const mn = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      return mn[d.getMonth()] + ' ' + d.getDate() + ' ' + w[d.getDay()];
+    }
+    return `${d.getMonth()+1}月${d.getDate()}日 ${w[d.getDay()]}`;
+  }
+  function formatDateShort(dateStr) {
+    const d = new Date(dateStr + 'T00:00:00');
+    if (getLang() === 'en') {
+      const mn = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      return mn[d.getMonth()] + ' ' + d.getDate();
+    }
+    return `${d.getMonth()+1}月${d.getDate()}日`;
+  }
+  function addDays(dateStr, n) {
+    const d = new Date(dateStr + 'T00:00:00');
+    d.setDate(d.getDate() + n);
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+  // ── i18n 多语言 ──
+  const langZh = {
+    add: '添加', dailyPlan: '每日计划', inputTodo: '输入要做的事…',
+    done: '已完成', total: '共', rate: '完成率',
+    overdue: '逾期', defer: '顺延', emptyDay: '这天还没有计划，写点什么吧',
+    emptyPrev: '往前一周暂无计划', prevReview: '往日回顾',
+    notebook: '记录本', newNb: '新建记录本', whisper: '心里话', newWhisper: '新建心里话',
+    personalCenter: '个人中心', version: '版本信息', privacy: '隐私声明',
+    appearance: '外观', language: '语言', deleteAcc: '删除账号',
+    onboardingGuide: '新手指南', close: '关闭', confirm: '确定', cancel: '取消',
+    login: '登录', register: '注册', registerLogin: '注册并登录', loginTab: '登录', registerTab: '注册',
+    loginBtn: '登录', registerBtn: '注册并登录',
+    accountLabel: '账号：', passwordLabel: '密码：',
+    setPwdPlaceholder: '设置密码…', confirmPwdPlaceholder: '确定密码…', inputPwdPlaceholder: '输入密码…',
+    whosePlaceholder: '这是谁的随手记？', pwdMismatch: '两次密码不一致', pwdWrong: '密码不正确',
+    pwdMin: '密码至少2位', enterPwd: '请输入密码', enterName: '请输入名字',
+    deleteConfirm: '确定删除', delAccMsg: '所有数据（计划、记录本、心里话）将被永久删除',
+    versionInfo: '随手记 v1.0', versionInfoDetail: '2026年6月 · 本地离线应用',
+    versionInfoStorage: '数据仅存储在此浏览器中', privacyText: '本应用为纯本地离线应用。所有数据仅存储在您当前使用的浏览器中（localStorage），不会向任何服务器发送数据，不会收集任何个人信息。密码使用 SHA-256 哈希加密存储。删除账号后数据不可恢复。请妥善保管您的密码。',
+    saveBtn: '保存', updateBtn: '更新', deleteBtn: '删除', editBtn: '编辑', cancelBtn: '取消',
+    whisperPlaceholder: '说说你的心里话吧...', titlePlaceholder: '标题...',
+    whisperEmpty: '还没有心里话，写一条吧', notebookEmpty: '还没有内容，写点什么吧',
+    renameNotebook: '重命名记录本', renamePlaceholder: '输入新名字…',
+    newNotebook: '新建记录本', newNotebookPlaceholder: '输入记录本名字…',
+    confirmDelete: '确定删除', deleteItemFrom: '确定从 ', deleteItemMid: ' 中删除',
+    lightMode: '浅色', darkMode: '深色',
+    chinese: '中文', english: 'English',
+    onboardingStep1Title: '左边：日历和往日回顾', onboardingStep1Desc: '翻日历、看漏了什么、顺延任务',
+    onboardingStep2Title: '中间：每日计划', onboardingStep2Desc: '写今天要做的事，打勾完成',
+    onboardingStep3Title: '右边：记录本和心里话', onboardingStep3Desc: '收藏想做的事，写写心里话',
+    tourNext: '下一步', tourStart: '开始使用', tourSkip: '跳过',
+    setAppPwd: '为随手记设置一个密码，以后每次打开都需要输入',
+    unlockApp: '输入密码进入', authSet: '设置', authUnlock: '解锁',
+    doneStatus: '已完成', inProgress: '进行中',
+    deleteTask: '删除任务', deleteTaskMsg: '确定删除 ', deleteTaskSuffix: ' 吗？',
+    deleteNotebook: '删除记录本', deleteNotebookMsg: '确定删除 ', deleteNotebookSuffix: ' 吗？',
+    deleteNotebookHint: '里面所有内容也会被删除',
+    deleteEntry: '删除条目', deleteEntryFrom: '确定从 ', deleteEntryMid: ' 中删除',
+    deleteItemMsg: '确定删除这条心里话吗？',
+    deleteWhisper: '删除心里话', deleteAccount: '删除账号',
+    deleteAccountMsg: '确定删除 ', deleteAccountSuffix: ' 吗？',
+    deleteAccountHint: '所有数据（计划、记录本、心里话）将被永久删除',
+    personalCenterLabel: '个人中心', statDone: '已完成', statTotal: '共', statRate: '完成率',
+    entryPlaceholder: '添加条目…', overduetag: '逾期', whoseWhisper: '的随手记', sun: '周日', mon: '周一', tue: '周二', wed: '周三', thu: '周四', fri: '周五', sat: '周六', sunShort: '日', monShort: '一', tueShort: '二', wedShort: '三', thuShort: '四', friShort: '五', satShort: '六',
+prevDay: '前一天', nextDay: '后一天', prevMonth: '上个月', nextMonth: '下个月',
+prevYear: '上一年', nextYear: '下一年', openCalendar: '展开日历',
+unknownAccount: '未知账号', selectAccount: '请选择账号', defaultAccount: '默认账号',
+kbdHint: '点 📅 打开月历 · 滚轮翻日 · 点 ✕ 删除 · 自动保存',
+  };
+  const langEn = {
+    add: 'Add', dailyPlan: 'Daily Plan', inputTodo: 'What to do…',
+    done: 'Done', total: 'Total', rate: 'Rate',
+    overdue: 'Overdue', defer: 'Defer', emptyDay: 'Nothing for this day',
+    emptyPrev: 'No past week plans', prevReview: 'Past Week',
+    notebook: 'Notebooks', newNb: 'New Notebook', whisper: 'Whispers', newWhisper: 'New Whisper',
+    personalCenter: 'Settings', version: 'Version', privacy: 'Privacy',
+    appearance: 'Appearance', language: 'Language', deleteAcc: 'Delete Account',
+    onboardingGuide: 'Onboarding', close: 'Close', confirm: 'OK', cancel: 'Cancel',
+    login: 'Sign In', register: 'Sign Up', registerLogin: 'Sign Up & Login', loginTab: 'Sign In', registerTab: 'Sign Up',
+    loginBtn: 'Sign In', registerBtn: 'Sign Up & Login',
+    accountLabel: 'Account: ', passwordLabel: 'Password: ',
+    setPwdPlaceholder: 'Set password…', confirmPwdPlaceholder: 'Confirm…', inputPwdPlaceholder: 'Password…',
+    whosePlaceholder: 'Whose notebook?', pwdMismatch: 'No match', pwdWrong: 'Wrong password',
+    pwdMin: 'At least 2 chars', enterPwd: 'Enter password', enterName: 'Enter name',
+    deleteConfirm: 'Delete', delAccMsg: 'All data will be permanently deleted',
+    versionInfo: 'CasualNotes v1.0', versionInfoDetail: 'June 2026 · Offline App',
+    versionInfoStorage: 'Data only in this browser', privacyText: 'This is a purely offline app. All data is stored only in your browser (localStorage). No data is sent. No info collected. Passwords are SHA-256 hashed. Deleted accounts are irrecoverable.',
+    saveBtn: 'Save', updateBtn: 'Update', deleteBtn: 'Delete', editBtn: 'Edit', cancelBtn: 'Cancel',
+    whisperPlaceholder: 'Write your thoughts...', titlePlaceholder: 'Title...',
+    whisperEmpty: 'No whispers yet', notebookEmpty: 'Nothing yet',
+    renameNotebook: 'Rename', renamePlaceholder: 'New name…',
+    newNotebook: 'New Notebook', newNotebookPlaceholder: 'Name…',
+    confirmDelete: 'Delete', deleteItemFrom: 'Delete "', deleteItemMid: '" from ',
+    lightMode: 'Light', darkMode: 'Dark',
+    chinese: '中文', english: 'English',
+    onboardingStep1Title: 'Left: Calendar & Past Week', onboardingStep1Desc: 'Browse dates, overdue, defer',
+    onboardingStep2Title: 'Center: Daily Plan', onboardingStep2Desc: 'Write tasks, check them off',
+    onboardingStep3Title: 'Right: Notebooks & Whispers', onboardingStep3Desc: 'Collections & private thoughts',
+    tourNext: 'Next', tourStart: 'Start', tourSkip: 'Skip',
+    setAppPwd: 'Set a password for your notebook',
+    unlockApp: 'Enter password', authSet: 'Set', authUnlock: 'Unlock',
+    doneStatus: 'Done', inProgress: 'In Progress',
+    deleteTask: 'Delete Task', deleteTaskMsg: 'Delete ', deleteTaskSuffix: '?',
+    deleteNotebook: 'Delete Notebook', deleteNotebookMsg: 'Delete ', deleteNotebookSuffix: '?',
+    deleteNotebookHint: 'All contents deleted too',
+    deleteEntry: 'Delete Entry', deleteEntryFrom: 'Delete "', deleteEntryMid: '" from ',
+    deleteItemMsg: 'Delete this whisper?',
+    deleteWhisper: 'Delete Whisper', deleteAccount: 'Delete Account',
+    deleteAccountMsg: 'Delete ', deleteAccountSuffix: '?',
+    deleteAccountHint: 'All data (plans, notebooks, whispers) deleted permanently',
+    personalCenterLabel: 'Settings', statDone: 'Done', statTotal: 'Total', statRate: 'Rate',
+    entryPlaceholder: 'Add entry…', overduetag: 'Overdue', whoseWhisper: '\'s Notebook', sun: 'Sun', mon: 'Mon', tue: 'Tue', wed: 'Wed', thu: 'Thu', fri: 'Fri', sat: 'Sat', sunShort: 'Su', monShort: 'Mo', tueShort: 'Tu', wedShort: 'We', thuShort: 'Th', friShort: 'Fr', satShort: 'Sa',
+prevDay: 'Prev Day', nextDay: 'Next Day', prevMonth: 'Prev Month', nextMonth: 'Next Month',
+prevYear: 'Prev Year', nextYear: 'Next Year', openCalendar: 'Calendar',
+unknownAccount: 'Unknown', selectAccount: 'Select account', defaultAccount: 'Default',
+kbdHint: '📅 Calendar · Scroll days · ✕ Delete · Auto-save',
+  };
+
+  function getLang() { return localStorage.getItem('app_lang') || 'zh'; }
+  function setLang(l) { localStorage.setItem('app_lang', l); }
+  function t(key) { const d = getLang() === 'en' ? langEn : langZh; return d[key] || key; }
+  var _t = t; window.t = t; window._t = _t;
+
+  function applyAppearance() {
+    const mode = localStorage.getItem('app_appearance') || 'light';
+    document.body.classList.toggle('dark', mode === 'dark');
+  }
+
+  // Update all static text nodes to current language
+  // Apply language: set all known elements unconditionally
+  function applyLanguage() {
+    var l = getLang();
+    // Auth tabs
+    var t1 = document.querySelector('.auth-tab[data-tab="login"]'); if (t1) t1.textContent = l === 'en' ? 'Sign In' : '登录';
+    var t2 = document.querySelector('.auth-tab[data-tab="register"]'); if (t2) t2.textContent = l === 'en' ? 'Sign Up' : '注册';
+    var ab = document.getElementById('authBtn'); if (ab && ab.parentElement && ab.parentElement.parentElement && ab.parentElement.parentElement.id === 'authMask') ab.textContent = l === 'en' ? 'Sign In' : '登录';
+    // Tour
+    var tp = document.getElementById('tourPrev'); if (tp) tp.textContent = l === 'en' ? 'Previous' : '上一步';
+    var ts = document.getElementById('tourSkip'); if (ts) ts.textContent = l === 'en' ? 'Skip' : '跳过';
+    var tn = document.getElementById('tourNext'); if (tn) tn.textContent = l === 'en' ? 'Next' : '下一步';
+    // PC label
+    var pl = document.getElementById('pcLabel'); if (pl) pl.textContent = l === 'en' ? 'Settings' : '个人中心';
+    // Right panel titles
+    var nb = document.getElementById('nbTitle'); if (nb) { var b = nb.querySelector('button'); nb.innerHTML = '📒 ' + (l === 'en' ? 'Notebooks' : '记录本') + ' '; if (b) nb.appendChild(b); }
+    var wt = document.getElementById('whisperTitle'); if (wt) { var b = wt.querySelector('button'); wt.innerHTML = '💭 ' + (l === 'en' ? 'Whispers' : '心里话') + ' '; if (b) wt.appendChild(b); }
+    // Calendar weekdays
+    var hr = document.querySelector('.cal-drop-weekdays'); if (hr) { var ss = hr.querySelectorAll('span'); var sd = l === 'en' ? ['Su','Mo','Tu','We','Th','Fr','Sa'] : ['日','一','二','三','四','五','六']; for (var i = 0; i < ss.length && i < 7; i++) ss[i].textContent = sd[i]; }
+    // Add button
+    var aBtn = document.getElementById('btnAdd'); if (aBtn) aBtn.textContent = '＋ ' + (l === 'en' ? 'Add' : '添加');
+    // Tooltips
+    var tt = [['btnPrev','prevDay'],['btnNext','nextDay'],['btnCalToggle','openCalendar'],
+      ['btnDropPrevYear','prevYear'],['btnDropPrevMonth','prevMonth'],['btnDropNextMonth','nextMonth'],['btnDropNextYear','nextYear'],
+      ['btnPC','personalCenter'],['btnNbCreate','newNotebook'],['btnWhisperCreate','newWhisper']];
+    tt.forEach(function(p){ var e = document.getElementById(p[0]); if (e) e.title = t(p[1]); });
+    document.querySelectorAll('.btn-nb-delete').forEach(function(e){ e.title = l === 'en' ? 'Delete Notebook' : '删除记录本'; });
+    document.querySelectorAll('.btn-nb-edit').forEach(function(e){ e.title = l === 'en' ? 'Rename' : '重命名'; });
+    document.querySelectorAll('.btn-delete').forEach(function(e){ e.title = l === 'en' ? 'Delete' : '删除'; });
+    // Kbd hint
+    var kh = document.querySelector('.kbd-hint'); if (kh) kh.innerHTML = l === 'en' ? '<kbd>📅</kbd> Calendar · Scroll days · <kbd>✕</kbd> Delete · Auto-save' : '点 <kbd>📅</kbd> 打开月历 · 滚轮翻日 · 点 <kbd>✕</kbd> 删除 · 自动保存';
+    // Center title
+    var ct = document.getElementById('centerTitle'); if (ct && ct.textContent.indexOf('每日计划') >= 0) ct.textContent = '📋 ' + (l === 'en' ? 'Daily Plan' : '每日计划');
+    // Input placeholder
+    var inp = document.getElementById('inputTask'); if (inp && inp.placeholder.indexOf('输入') >= 0) inp.placeholder = l === 'en' ? 'What to do…' : '输入要做的事…';
+    // Empty msg
+    var em = document.getElementById('emptyMsg'); if (em && em.textContent.indexOf('这天') >= 0) em.textContent = l === 'en' ? 'Nothing planned for this day' : '这天还没有计划，写点什么吧';
+    // Stats
+    var sl = [['statDoneLabel',l==='en'?'Done':'已完成'],['statTotalLabel',l==='en'?'Total':'共'],['statRateLabel',l==='en'?'Rate':'完成率']];
+    sl.forEach(function(s){ var e = document.getElementById(s[0]); if (e) e.textContent = s[1]; });
+  }
+
+  function genId() {
+    return Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+  }
+
+  // ── 密码 ──
+  async function hashPwd(p) {
+    if (crypto && crypto.subtle) {
+      try { const e = new TextEncoder().encode(p); const b = await crypto.subtle.digest('SHA-256', e); return 's2_' + Array.from(new Uint8Array(b)).map(x => x.toString(16).padStart(2,'0')).join(''); } catch(_) {}
+    }
+    let h = 0; for (let i = 0; i < p.length; i++) h = ((h << 5) - h + p.charCodeAt(i)) | 0;
+    return 'fb_' + (h >>> 0).toString(16);
+  }
+  function isUnlocked() { return sessionStorage.getItem('suo') === '1'; }
+  function setUnlocked() { sessionStorage.setItem('suo', '1'); }
+  function getAccounts() { try { return JSON.parse(localStorage.getItem('app_accounts') || '[]'); } catch(_) { return []; } }
+  function saveAccounts(arr) { localStorage.setItem('app_accounts', JSON.stringify(arr)); }
+  function hasPwd() { return getAccounts().length > 0; }
+  function getLastId() { return localStorage.getItem('app_last') || ''; }
+  function setLastId(id) { localStorage.setItem('app_last', id); }
+  function isOnboarded() { return localStorage.getItem('onb') === '1'; }
+  function setOnboarded() { localStorage.setItem('onb', '1'); }
+  // 兼容旧版单账号
+  function migrateOldAccount() {
+    const oldHash = localStorage.getItem('app_hash');
+    const oldName = localStorage.getItem('app_name');
+    if (oldHash) {
+      const acc = { id: genId(), name: oldName || _t('defaultAccount'), hash: oldHash };
+      saveAccounts([acc]); setLastId(acc.id);
+      localStorage.removeItem('app_hash'); localStorage.removeItem('app_name');
+    }
+  }
+
+  async function doAuth() {
+    migrateOldAccount();
+    const mask = document.getElementById('authMask');
+    const title = document.getElementById('authTitle');
+    const sub = document.getElementById('authSub');
+    const err = document.getElementById('authErr');
+    const btn = document.getElementById('authBtn');
+    const fields = document.getElementById('authFields');
+    const tabs = document.getElementById('authTabs');
+
+    let tab = hasPwd() ? 'login' : 'register';
+    let selectedAccId = getLastId() || (getAccounts()[0]?.id || '');
+
+    function switchTab(t) {
+      tab = t;
+      document.querySelectorAll('.auth-tab').forEach(el => el.classList.toggle('active', el.dataset.tab === t));
+      renderForm();
+    }
+
+    function addEye(inputId, eyeId) {
+      const inp = document.getElementById(inputId);
+      const eye = document.getElementById(eyeId);
+      if (!inp || !eye) return;
+      eye.onclick = () => {
+        inp.type = inp.type === 'password' ? 'text' : 'password';
+        eye.textContent = inp.type === 'password' ? '👁' : '🙈';
+      };
+    }
+
+    function renderForm() {
+      err.textContent = '';
+      if (tab === 'register') {
+        title.innerHTML = '&#x1F4DD; ' + _t('register');
+        sub.textContent = '';
+        btn.textContent = _t('registerLogin');
+        tabs.style.display = '';
+        fields.innerHTML =
+          '<div class="auth-field-row"><input type="text" id="authName" placeholder="' + _t('whosePlaceholder') + '" maxlength="20"></div>' +
+          '<div class="auth-field-row pwd-wrap"><input type="password" id="authPwd1" placeholder="' + _t('setPwdPlaceholder') + '" maxlength="30"><button class="btn-eye" id="eye1" type="button">&#x1f441;</button></div>' +
+          '<div class="auth-field-row pwd-wrap"><input type="password" id="authPwd2" placeholder="' + _t('confirmPwdPlaceholder') + '" maxlength="30"><button class="btn-eye" id="eye2" type="button">&#x1f441;</button></div>';
+        document.getElementById('authName').focus();
+        addEye('authPwd1', 'eye1'); addEye('authPwd2', 'eye2');
+      } else {
+        var accounts = getAccounts();
+        var curAcc = accounts.find(function(a){ return a.id === selectedAccId; });
+        title.innerHTML = '&#x1F510; ' + _t('login');
+        sub.textContent = curAcc ? curAcc.name + _t('whoseWhisper') : _t('authUnlock');
+        btn.textContent = _t('loginBtn');
+        tabs.style.display = '';
+
+        var selectorHtml = '';
+        if (accounts.length > 1) {
+          var opts = accounts.map(function(a){ return '<option value="' + a.id + '"' + (a.id === selectedAccId ? ' selected' : '') + '>' + escapeHtml(a.name) + '</option>'; }).join('');
+          selectorHtml = '<div class="auth-field-row auth-field-label"><span class="auth-label">' + _t('accountLabel') + '</span><div class="auth-select-wrap"><select id="authAccSelect" class="auth-select">' + opts + '</select></div></div>';
+        }
+
+        fields.innerHTML = selectorHtml + '<div class="auth-field-row auth-field-label pwd-wrap"><span class="auth-label">' + _t('passwordLabel') + '</span><input type="password" id="authPwd" placeholder="" maxlength="30"><button class="btn-eye" id="eyePwd" type="button">&#x1f441;</button></div>';
+
+        var sel = document.getElementById('authAccSelect');
+        if (sel) sel.onchange = function(){ selectedAccId = sel.value; renderForm(); };
+
+        var pw = document.getElementById('authPwd'); if (pw) pw.focus();
+        addEye('authPwd', 'eyePwd');
+      }
+      bindTabClicks();
+    }
+
+    function bindTabClicks() {
+      document.querySelectorAll('.auth-tab').forEach(el => { el.onclick = function(){ switchTab(el.dataset.tab); }; });
+    }
+
+    mask.style.display = '';
+    renderForm();
+
+    await new Promise(resolve => {
+      btn.onclick = async () => {
+        if (tab === 'register') {
+          const name = (document.getElementById('authName')?.value || '').trim();
+          const p1 = document.getElementById('authPwd1')?.value || '';
+          const p2 = document.getElementById('authPwd2')?.value || '';
+          if (!name) { err.textContent = t('enterName'); return; }
+          if (!p1) { err.textContent = t('enterPwd'); return; }
+          if (p1.length < 2) { err.textContent = t('pwdMin'); return; }
+          if (p1 !== p2) { err.textContent = t('pwdMismatch'); return; }
+          const accs = getAccounts();
+          const newAcc = { id: genId(), name, hash: await hashPwd(p1) };
+          accs.push(newAcc);
+          saveAccounts(accs); setLastId(newAcc.id);
+          setUnlocked(); resolve();
+        } else {
+          const pwd = document.getElementById('authPwd')?.value || '';
+          if (!pwd) { err.textContent = t('enterPwd'); return; }
+          const accounts = getAccounts();
+          const acc = accounts.find(a => a.id === selectedAccId);
+          if (!acc) { err.textContent = _t('selectAccount'); return; }
+          if (await hashPwd(pwd) === acc.hash) { setLastId(acc.id); setUnlocked(); resolve(); }
+          else { err.textContent = t('pwdWrong'); document.getElementById('authPwd').value = ''; document.getElementById('authPwd').focus(); }
+        }
+      };
+      fields.onkeydown = e => { if (e.key === 'Enter') btn.click(); };
+    });
+
+    mask.style.display = 'none';
+  }
+
+  // ── 新手指引 ──
+  var onboardingDataBackup = null;
+
+  function backupAndSeedData() {
+    onboardingDataBackup = {
+      tasks: JSON.parse(JSON.stringify(tasks)),
+      notebooks: JSON.parse(JSON.stringify(notebooks)),
+      whisperEntries: JSON.parse(JSON.stringify(whisperEntries))
+    };
+    // Seed demo data for the tour
+    var today = todayStr();
+    tasks = [
+      { id: 'tour_t1', text: getLang()==='en'?'Write project report':'完成项目报告', date: today, done: false, createdAt: new Date().toISOString() },
+      { id: 'tour_t2', text: getLang()==='en'?'Team meeting at 3pm':'下午3点团队会议', date: today, done: true, createdAt: new Date().toISOString() }
+    ];
+    notebooks = [
+      { id: 'tour_nb1', name: getLang()==='en'?'Places to Visit':'想去玩的地方', items: [
+        { id: 'tour_ni1', text: getLang()==='en'?'Mount Huang':'黄山', done: false },
+        { id: 'tour_ni2', text: getLang()==='en'?'West Lake':'西湖', done: true }
+      ]}
+    ];
+    whisperEntries = [
+      { id: 'tour_w1', title: getLang()==='en'?'Today\'s mood':'今天的心情', titleAuto: false, content: getLang()==='en'?'The weather is great today!':'今天天气真好！', date: today }
+    ];
+  }
+
+  function seedStarterData() {
+    var today = todayStr();
+    var l = getLang();
+    // Daily plan
+    tasks = [
+      { id: genId(), text: l==='en'?'Plan weekend hike route':'规划周末徒步路线', date: today, done: false, createdAt: new Date().toISOString() },
+      { id: genId(), text: l==='en'?'Buy hiking shoes':'购买登山鞋', date: today, done: true, createdAt: new Date().toISOString() }
+    ];
+    // Notebooks
+    notebooks = [
+      { id: genId(), name: l==='en'?'🗻 Mountains to Climb':'🗻 想爬的山', items: [
+        { id: genId(), text: l==='en'?'Mount Huang':'黄山', done: false },
+        { id: genId(), text: l==='en'?'Mount Tai':'泰山', done: true },
+        { id: genId(), text: l==='en'?'Mount Hua':'华山', done: false }
+      ]},
+      { id: genId(), name: l==='en'?'🍜 Food to Try':'🍜 想吃的美食', items: [
+        { id: genId(), text: l==='en'?'Chongqing hotpot':'重庆火锅', done: false },
+        { id: genId(), text: l==='en'?'Lanzhou beef noodles':'兰州牛肉面', done: true }
+      ]},
+      { id: genId(), name: l==='en'?'📖 Books to Read':'📖 想读的书', items: [
+        { id: genId(), text: l==='en'?'Sapiens':'《人类简史》', done: false }
+      ]}
+    ];
+    // Whisper
+    whisperEntries = [
+      { id: genId(), title: l==='en'?'Hello, Notebook':'你好，随手记', titleAuto: false,
+        content: l==='en'?'Today marks the start of my notebook journey. From now on, I will record every little happiness in life here. 🌿':'今天是开始使用随手记的日子。从今天起，生活的每一点小确幸，都记录在这里。🌿', date: today }
+    ];
+    saveTasks(); saveNotebooks(); saveWhisper();
+  }
+
+  function restoreUserData() {
+    if (onboardingDataBackup) {
+      var wasEmpty = onboardingDataBackup.tasks.length === 0
+        && onboardingDataBackup.notebooks.length === 0
+        && onboardingDataBackup.whisperEntries.length === 0
+        && getAccounts().length === 1;
+      tasks = onboardingDataBackup.tasks;
+      notebooks = onboardingDataBackup.notebooks;
+      whisperEntries = onboardingDataBackup.whisperEntries;
+      onboardingDataBackup = null;
+      if (wasEmpty) {
+        // New account: seed starter data
+        seedStarterData();
+      } else {
+        saveTasks();
+        saveNotebooks();
+        saveWhisper();
+      }
+    }
+  }
+
+  function startOnboarding() {
+    var l = getLang();
+    var steps = [
+      { el: '.pc-bar', icon: '⚙',
+        title: l==='en'?'Personal Center':'个人中心',
+        text: l==='en'?'Click the gear icon to open settings.<br><br>Here you can:<br>• Replay this onboarding guide<br>• Check version info & privacy policy<br>• Switch appearance (Light/Dark)<br>• Switch language (中文/English)<br>• Delete your account': '点击左下角齿轮图标打开个人中心。<br><br>在这里你可以：<br>• 重新查看新手指南<br>• 查看版本信息与隐私声明<br>• 切换外观（浅色/深色）<br>• 切换语言（中文/English）<br>• 删除账号'
+      },
+      { el: '.left-main', icon: '📅',
+        title: l==='en'?'Calendar & Past Week':'日历与往日回顾',
+        text: l==='en'?'Click the calendar icon to open a month view.<br>Use arrows or scroll to switch days.<br><br>Below the calendar is <b>Past Week</b>:<br>• Shows tasks from the past 7 days<br>• Overdue tasks are marked in orange<br>• Click <b>Defer</b> to move a task to today<br>• Click any day block to jump to that day': '点击日历图标可以展开月历视图。<br>使用箭头或滚轮切换日期。<br><br>日历下方是<b>往日回顾</b>：<br>• 显示过去7天的任务<br>• 未完成的任务标记为逾期<br>• 点击<b>顺延</b>可将任务移到今天<br>• 点击任意日期块可跳转到那天'
+      },
+      { el: '.center-panel', icon: '📋',
+        title: l==='en'?'Daily Plan':'每日计划',
+        text: l==='en'?'This is your main workspace.<br><br><b>Create:</b> Type a task in the input box and press Enter or click + Add.<br><b>Complete:</b> Click the circle to check it off.<br><b>Delete:</b> Hover and click ✕ to delete a task.<br><br>Watch the demo below — we have already added 2 sample tasks for you.<br>Try clicking the circle to complete one!': '这是你的主要工作区。<br><br><b>创建：</b>在输入框里输入任务，回车或点击＋添加。<br><b>完成：</b>点击圆圈打勾标记完成。<br><b>删除：</b>悬停后点击 ✕ 删除任务。<br><br>我们已经为你添加了 2 条示例任务。<br>试着点击圆圈完成一条吧！'
+      },
+      { el: '.right-section-top', icon: '📒',
+        title: l==='en'?'Notebooks':'记录本',
+        text: l==='en'?'Notebooks are for collecting things you want to track.<br><br><b>Create:</b> Click the ＋ next to the Notebooks title, enter a name.<br><b>Open:</b> Click a notebook to view its contents.<br><b>Add entries:</b> Type in the input box and click + Add.<br><b>Check off:</b> Click the circle to mark as done.<br><b>Rename:</b> Hover and click ✎.<br><b>Delete:</b> Hover and click ✕ (notebook or entry).<br><br>We have created a sample notebook for you.<br>Click on it to explore!': '记录本用来收藏你关注的事。<br><br><b>创建：</b>点击记录本标题旁的 ＋，输入名字即可。<br><b>打开：</b>点击记录本查看内容。<br><b>添加条目：</b>在输入框输入后点击＋添加。<br><b>完成：</b>点击圆圈标记已完成。<br><b>重命名：</b>悬停后点击 ✎ 修改名字。<br><b>删除：</b>悬停后点击 ✕ 删除记录本或条目。<br><br>我们为你创建了一个示例记录本。<br>点击它看看吧！'
+      },
+      { el: '.right-section-bottom', icon: '💭',
+        title: l==='en'?'Whispers':'心里话',
+        text: l==='en'?'Whispers are private notes for your thoughts.<br><br><b>Create:</b> Click the ＋ next to the Whispers title.<br>Write a title (or leave blank for today\'s date), write your thoughts, and click Save.<br><b>View:</b> Click a whisper in the sidebar to read it.<br><b>Edit:</b> Click Edit on the whisper card to modify it.<br><b>Delete:</b> Click Delete to remove it.<br><br>We have written a sample whisper for you.<br>Click it to see how it works!': '心里话是你的私密笔记。<br><br><b>创建：</b>点击心里话标题旁的 ＋。<br>写标题（留空则用今天日期），写内容，点击保存。<br><b>查看：</b>点击侧栏条目阅读。<br><b>编辑：</b>在云朵卡片上点击编辑修改。<br><b>删除：</b>点击删除即可。<br><br>我们为你写了一条例句。<br>点击看看效果吧！'
+      }
+    ];
+
+    // Backup user data and inject demo data
+    backupAndSeedData();
+    render(); // re-render with demo data
+
+    var step = 0;
+    var hl = document.getElementById('tourHL');
+    var tip = document.getElementById('tourTip');
+    var mask = document.getElementById('tourMask');
+    var icon_el = document.getElementById('tourIcon');
+    var title_el = document.getElementById('tourTitle');
+    var text_el = document.getElementById('tourText');
+    var prevBtn = document.getElementById('tourPrev');
+    var skipBtn = document.getElementById('tourSkip');
+    var nextBtn = document.getElementById('tourNext');
+
+    function showStep(i) {
+      if (i >= steps.length) { end(); return; }
+      var s = steps[i];
+      var target = document.querySelector(s.el);
+      if (!target) { step++; showStep(step); return; }
+      var r = target.getBoundingClientRect();
+      hl.style.left = (r.left - 6) + 'px';
+      hl.style.top = (r.top - 6) + 'px';
+      hl.style.width = (r.width + 12) + 'px';
+      hl.style.height = (r.height + 12) + 'px';
+      hl.style.display = 'block';
+      tip.style.left = '50%';
+      tip.style.transform = 'translateX(-50%)';
+      tip.style.bottom = '24px';
+      tip.style.top = '';
+      tip.style.right = '';
+      tip.style.maxWidth = '480px';
+      tip.style.width = 'auto';
+      tip.style.maxHeight = '42vh';
+      tip.style.overflowY = 'auto';
+      tip.style.display = 'block';
+      icon_el.textContent = s.icon;
+      title_el.textContent = s.title;
+      text_el.innerHTML = s.text;
+      prevBtn.style.display = (i === 0) ? 'none' : 'inline-block';
+      skipBtn.style.display = 'inline-block';
+      nextBtn.textContent = (i === steps.length - 1) ? (l==='en'?'Start Using':'开始使用') : (l==='en'?'Next':'下一步');
+      mask.style.display = 'block';
+    }
+
+    function prev() { if (step > 0) { step--; showStep(step); } }
+    function next() { step++; showStep(step); }
+
+    function end() {
+      hl.style.display = 'none';
+      tip.style.display = 'none';
+      tip.style.transform = '';
+      tip.style.left = '';
+      tip.style.bottom = '';
+      mask.style.display = 'none';
+      setOnboarded();
+      restoreUserData();
+      render();
+    }
+
+    prevBtn.onclick = null;
+    skipBtn.onclick = null;
+    nextBtn.onclick = null;
+    prevBtn.onclick = prev;
+    skipBtn.onclick = end;
+    nextBtn.onclick = next;
+    step = 0;
+    showStep(0);
+  }
+
+  // ── 启动入口 ──
+  async function startup() {
+    applyAppearance();
+    applyLanguage();
+    if (!isUnlocked()) await doAuth();
+    render();
+    if (!isOnboarded()) {
+      // 稍等一下让 render 完成再开始指引
+      setTimeout(() => startOnboarding(), 200);
+    }
+  }
+
+  // ── 数据管理 ──
+  let tasks = JSON.parse(localStorage.getItem(PLAN_KEY) || '[]');
+  let notebooks = JSON.parse(localStorage.getItem(NB_KEY) || '[]');
+  let whisperEntries = JSON.parse(localStorage.getItem(WHISPER_DATA_KEY) || '[]');
+  function saveTasks() { localStorage.setItem(PLAN_KEY, JSON.stringify(tasks)); }
+  function saveNotebooks() { localStorage.setItem(NB_KEY, JSON.stringify(notebooks)); }
+  function saveWhisper() { localStorage.setItem(WHISPER_DATA_KEY, JSON.stringify(whisperEntries)); }
+
+
+  // ── 状态 ──
+  let currentDate = todayStr();
+  let calYear = new Date().getFullYear();
+  let calMonth = new Date().getMonth();
+  let calOpen = false;
+  // currentView: 'daily' |  notebookId
+  let currentView = 'daily';
+  let whisperEditMode = false;
+
+  // ── 日历 ──
+  function openCalendar() {
+    calOpen = true;
+    calYear = new Date(currentDate + 'T00:00:00').getFullYear();
+    calMonth = new Date(currentDate + 'T00:00:00').getMonth();
+    document.getElementById('calendarDropdown').classList.add('show');
+    document.getElementById('calOverlay').classList.add('show');
+    document.getElementById('btnCalToggle').classList.add('active');
+    renderCalendarGrid();
+  }
+  function closeCalendar() {
+    calOpen = false;
+    document.getElementById('calendarDropdown').classList.remove('show');
+    document.getElementById('calOverlay').classList.remove('show');
+    document.getElementById('btnCalToggle').classList.remove('active');
+  }
+  function toggleCalendar() { calOpen ? closeCalendar() : openCalendar(); }
+  function pickDate(ds) { currentDate = ds; closeCalendar(); currentView = 'daily'; render(); }
+
+  function renderCalendarGrid() {
+    if (!calOpen) return;
+    const y = calYear, m = calMonth;
+    document.getElementById('calDropTitle').textContent = getLang() === 'en'
+      ? ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][m] + ' ' + y
+      : `${y}年${m + 1}月`;
+    const startDow = new Date(y, m, 1).getDay();
+    const dim = new Date(y, m + 1, 0).getDate();
+    const dip = new Date(y, m, 0).getDate();
+    const cells = [];
+    const today = todayStr();
+    for (let i = startDow - 1; i >= 0; i--) {
+      const d = dip - i;
+      const mm = m === 0 ? 12 : m, yy = m === 0 ? y - 1 : y;
+      cells.push({ day: d, ds: `${yy}-${String(mm).padStart(2,'0')}-${String(d).padStart(2,'0')}`, other: true });
+    }
+    for (let d = 1; d <= dim; d++)
+      cells.push({ day: d, ds: `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`, other: false });
+    const rem = 42 - cells.length;
+    for (let d = 1; d <= rem; d++) {
+      const mm = m === 11 ? 1 : m + 2, yy = m === 11 ? y + 1 : y;
+      cells.push({ day: d, ds: `${yy}-${String(mm).padStart(2,'0')}-${String(d).padStart(2,'0')}`, other: true });
+    }
+    const dayStatus = {};
+    tasks.forEach(t => {
+      if (!dayStatus[t.date]) dayStatus[t.date] = { total:0, done:0 };
+      dayStatus[t.date].total++;
+      if (t.done) dayStatus[t.date].done++;
+    });
+    document.getElementById('calDropGrid').innerHTML = cells.map(c => {
+      const isToday = c.ds === today, isSel = c.ds === currentDate;
+      const info = dayStatus[c.ds];
+      const hasTask = !!info, allDone = hasTask && info.done === info.total;
+      let cls = 'cal-drop-cell';
+      if (c.other) cls += ' other-month';
+      if (isToday) cls += ' today';
+      if (isSel) cls += ' selected';
+      let dot = '';
+      if (hasTask) {
+        const dc = allDone ? 'cal-drop-dot done' : 'cal-drop-dot';
+        dot = `<span class="${dc}"></span>`;
+      }
+      return `<div class="${cls}" data-date="${c.ds}" onclick="pickDate('${c.ds}')">
+        <span class="cal-drop-day">${c.day}</span>${dot}</div>`;
+    }).join('');
+  }
+
+  // ── 主渲染 ──
+  function render() {
+    // 日期大字
+    const db = document.getElementById('dateBig');
+    db.textContent = formatDate(currentDate);
+
+    // 根据 currentView 渲染中间区域
+    if (currentView === 'daily') renderDaily();
+    else if (currentView === 'whisper-new') renderWhisperEdit(null);
+    else if (currentView.startsWith('wh_')) renderWhisperView(currentView.slice(3));
+    else if (notebooks.some(n => n.id === currentView)) renderNotebook(currentView);
+    else renderDaily();
+
+    // 日历
+    if (calOpen) renderCalendarGrid();
+    // 左侧回顾
+    renderPrevDays();
+    // 右侧记录本列表
+    renderNbList();
+    // 更新语言相关静态标签
+    applyLanguage();
+  }
+
+  // ── 每日计划视图 ──
+  function renderDaily() {
+    document.getElementById('add-bar').style.display = '';
+    document.getElementById('centerTitle').textContent = '📋 ' + t('dailyPlan');
+    document.getElementById('inputTask').placeholder = t('inputTodo');
+    document.getElementById('emptyMsg').textContent = t('emptyDay');
+
+    const taskList = document.getElementById('taskList');
+    const emptyState = document.getElementById('emptyState');
+    const statsBar = document.getElementById('statsBar');
+    const kbdHint = document.querySelector('.kbd-hint');
+    if (kbdHint) kbdHint.style.display = '';
+    const displayTasks = tasks.filter(t => t.date === currentDate);
+
+    taskList.style.overflow = '';
+    if (displayTasks.length === 0) {
+      taskList.innerHTML = '';
+      emptyState.style.display = '';
+      statsBar.style.display = 'none';
+    } else {
+      emptyState.style.display = 'none';
+      statsBar.style.display = '';
+      taskList.innerHTML = displayTasks.map((t, i) => {
+        const cls = ['task-item', t.done ? 'done' : ''].filter(Boolean).join(' ');
+        const deferLabel = t.deferredFrom
+          ? `<span class="task-meta" style="color:var(--accent)">${formatDateShort(t.deferredFrom)}</span>` : '';
+        return `<div class="${cls}" style="animation-delay:${i*0.025}s">
+          <input type="checkbox" class="task-check" ${t.done?'checked':''} onchange="toggleTask('${t.id}')">
+          <span class="task-num">${i + 1}</span>
+          <span class="task-text">${escapeHtml(t.text)}</span>
+          ${deferLabel}
+          <button class="btn-delete" title="删除" onclick="deleteTask('${t.id}')">✕</button>
+        </div>`;
+      }).join('');
+      const done = displayTasks.filter(t => t.done).length;
+      const total = displayTasks.length;
+      document.getElementById('statDone').textContent = done;
+      document.getElementById('statTotal').textContent = total;
+      document.getElementById('statRate').textContent = total > 0 ? Math.round(done/total*100) + '%' : '–';
+      document.getElementById('statDoneLabel').textContent = t('done');
+      document.getElementById('statTotalLabel').textContent = t('total');
+      document.getElementById('statRateLabel').textContent = t('rate');
+    }
+  }
+
+  // ── 记录本视图 ──
+  function renderNotebook(nbId) {
+    const nb = notebooks.find(n => n.id === nbId);
+    if (!nb) { currentView = 'daily'; renderDaily(); renderNbList(); return; }
+
+    document.getElementById('add-bar').style.display = '';
+    document.getElementById('centerTitle').textContent = '📒 ' + nb.name;
+    document.getElementById('inputTask').placeholder = t('entryPlaceholder');
+    document.getElementById('emptyMsg').textContent = t('notebookEmpty');
+
+    const taskList = document.getElementById('taskList');
+    const emptyState = document.getElementById('emptyState');
+    const statsBar = document.getElementById('statsBar');
+    const kbdHint = document.querySelector('.kbd-hint');
+    if (kbdHint) kbdHint.style.display = '';
+    const items = nb.items || [];
+
+    taskList.style.overflow = '';
+    if (items.length === 0) {
+      taskList.innerHTML = '';
+      emptyState.style.display = '';
+      statsBar.style.display = 'none';
+    } else {
+      emptyState.style.display = 'none';
+      statsBar.style.display = '';
+      taskList.innerHTML = items.map((item, i) => {
+        const cls = ['task-item', item.done ? 'done' : ''].filter(Boolean).join(' ');
+        const status = item.done
+          ? '<span class="task-meta" style="color:#7dbf8c;">' + t('doneStatus') + '</span>'
+          : '<span class="task-meta" style="color:var(--accent);">' + t('inProgress') + '</span>';
+        return `<div class="${cls}" style="animation-delay:${i*0.025}s">
+          <input type="checkbox" class="task-check" ${item.done?'checked':''} onchange="toggleNbItem('${nbId}','${item.id}')">
+          <span class="task-num">${i + 1}</span>
+          <span class="task-text">${escapeHtml(item.text)}</span>
+          ${status}
+          <button class="btn-delete" title="删除" onclick="deleteNbItem('${nbId}','${item.id}')">✕</button>
+        </div>`;
+      }).join('');
+      const done = items.filter(it => it.done).length;
+      const total = items.length;
+      document.getElementById('statDone').textContent = done;
+      document.getElementById('statTotal').textContent = total;
+      document.getElementById('statRate').textContent = total > 0 ? Math.round(done/total*100) + '%' : '–';
+      document.getElementById('statDoneLabel').textContent = t('done');
+      document.getElementById('statTotalLabel').textContent = t('total');
+      document.getElementById('statRateLabel').textContent = t('rate');
+    }
+  }
+
+  // ── 右侧记录本列表 ──
+  function renderNbList() {
+    // 标题高亮
+    document.getElementById('nbTitle').className = 'right-section-title' + (currentView !== 'daily' && !currentView.startsWith('wh_') && currentView !== 'whisper-new' ? ' active' : '');
+    document.getElementById('whisperTitle').className = 'right-section-title' + (currentView.startsWith('wh_') || currentView === 'whisper-new' ? ' active' : '');
+
+    document.getElementById('nbList').innerHTML = notebooks.map(nb => {
+      const cls = 'nb-item' + (currentView === nb.id ? ' active' : '');
+      const done = (nb.items || []).filter(it => it.done).length;
+      const total = (nb.items || []).length;
+      return `<div class="${cls}" onclick="switchToNb('${nb.id}')">
+        <span class="nb-icon">📒</span>
+        <span class="nb-name">${escapeHtml(nb.name)}</span>
+        <span class="nb-count">${done}/${total}</span>
+        <button class="btn-nb-edit" title="重命名" onclick="event.stopPropagation();renameNotebook('${nb.id}')">✎</button>
+        <button class="btn-nb-delete" title="删除记录本" onclick="deleteNotebook(event,'${nb.id}')">✕</button>
+      </div>`;
+    }).join('');
+
+    // 心里话侧边栏
+    const sorted = [...whisperEntries].reverse();
+    document.getElementById('whisperSideList').innerHTML = sorted.map(w => {
+      const whViewId = 'wh_' + w.id;
+      const whCls = 'whisper-side-item' + (currentView === whViewId ? ' active' : '');
+      return `<div class="${whCls}" onclick="toggleWhisperEntry('${whViewId}')">
+        <span>💭</span>
+        <span class="ws-name">${escapeHtml(w.titleAuto ? formatDateShort(w.date) : w.title)}</span>
+      </div>`;
+    }).join('');
+  }
+
+  // ── 每日计划操作 ──
+  function addTask() {
+    const input = document.getElementById('inputTask');
+    const text = input.value.trim();
+    if (!text) return;
+    tasks.push({ id: genId(), text, date: currentDate, done: false, createdAt: new Date().toISOString() });
+    saveTasks();
+    input.value = '';
+    input.focus();
+    render();
+  }
+  function toggleTask(id) {
+    const task = tasks.find(x => x.id === id);
+    if (task) { task.done = !task.done; saveTasks(); render(); }
+  }
+  function deleteTask(id) {
+    const task = tasks.find(x => x.id === id);
+    if (!task) return;
+    showModal(_t('deleteTask'), '<div style="font-size:14px;color:var(--text);text-align:center;line-height:1.6;padding:8px 0;">' + _t('deleteTaskMsg') + '<strong>' + escapeHtml(task.text) + '</strong>' + _t('deleteTaskSuffix') + '</div>', _t('confirmDelete'), _t('cancel'), () => { tasks = tasks.filter(x => x.id !== id); saveTasks(); closeModal(); render(); }, true);
+  }
+  function deferTask(id) {
+    const task = tasks.find(x => x.id === id);
+    if (!task) return;
+    task.deferredFrom = task.deferredFrom || task.date;
+    task.date = todayStr();
+    saveTasks();
+    render();
+  }
+
+  // ── 记录本操作 ──
+  function addNbItem() {
+    if (currentView === 'daily') { addTask(); return; }
+    const input = document.getElementById('inputTask');
+    const text = input.value.trim();
+    if (!text) return;
+    const nb = notebooks.find(n => n.id === currentView);
+    if (!nb) return;
+    if (!nb.items) nb.items = [];
+    nb.items.push({ id: genId(), text, done: false });
+    saveNotebooks();
+    input.value = '';
+    input.focus();
+    render();
+  }
+  function toggleNbItem(nbId, itemId) {
+    const nb = notebooks.find(n => n.id === nbId);
+    if (!nb) return;
+    const item = (nb.items || []).find(it => it.id === itemId);
+    if (item) { item.done = !item.done; saveNotebooks(); render(); }
+  }
+  function deleteNbItem(nbId, itemId) {
+    const nb = notebooks.find(n => n.id === nbId);
+    if (!nb) return;
+    const item = (nb.items || []).find(it => it.id === itemId);
+    if (!item) return;
+    showModal(_t('deleteEntry'), '<div style="font-size:14px;color:var(--text);text-align:center;line-height:1.6;padding:8px 0;">' + _t('deleteEntryFrom') + '<strong>' + escapeHtml(nb.name) + '</strong>' + _t('deleteEntryMid') + '<br><strong>' + escapeHtml(item.text) + '</strong>' + _t('deleteTaskSuffix') + '</div>', _t('confirmDelete'), _t('cancel'), () => { nb.items = (nb.items || []).filter(it => it.id !== itemId); saveNotebooks(); closeModal(); render(); }, true);
+  }
+  // ── 通用弹窗 ──
+  let modalCallback = null;
+  let pcReopenOnClose = false;
+
+  function showModal(title, bodyHtml, confirmText, cancelText, onConfirm, danger) {
+    modalCallback = onConfirm;
+    const showConfirm = confirmText !== '';
+    document.getElementById('modalBox').innerHTML = `
+      <div class="modal-title">${title}</div>
+      ${bodyHtml}
+      <div class="modal-actions${showConfirm ? '' : ' centered'}">
+        <button class="btn-cancel" id="btnModalCancel">${cancelText || _t('cancel')}</button>
+        ${showConfirm ? `<button class="btn-confirm${danger ? ' danger' : ''}" id="btnModalConfirm">${confirmText || _t('confirm')}</button>` : ''}
+      </div>`;
+    document.getElementById('modalOverlay').classList.add('show');
+    // 绑定事件
+    document.getElementById('btnModalCancel').addEventListener('click', closeModal);
+    const confirmBtn = document.getElementById('btnModalConfirm');
+    if (confirmBtn) {
+      confirmBtn.addEventListener('click', async () => {
+        if (modalCallback) await modalCallback();
+      });
+    }
+    document.getElementById('modalOverlay').addEventListener('click', e => {
+      if (e.target === document.getElementById('modalOverlay')) closeModal();
+    });
+    // 键盘
+    document.addEventListener('keydown', modalKeyHandler);
+    setTimeout(() => {
+      const inp = document.getElementById('modalInput');
+      if (inp) { inp.focus(); inp.select(); }
+    }, 50);
+  }
+
+  function modalKeyHandler(e) {
+    if (e.key === 'Escape') { closeModal(); }
+    if (e.key === 'Enter' && document.activeElement && document.activeElement.id === 'modalInput' && document.getElementById('btnModalConfirm')) {
+      e.preventDefault();
+      if (modalCallback) { const cb = modalCallback(); if (cb && cb.then) cb.then(() => {}); }
+    }
+  }
+
+  function closeModal() {
+    var wasPC = pcReopenOnClose;
+    pcReopenOnClose = false;
+    document.getElementById('modalOverlay').classList.remove('show');
+    document.removeEventListener('keydown', modalKeyHandler);
+    modalCallback = null;
+    if (wasPC) { setTimeout(function(){ document.getElementById('btnPC').click(); }, 80); }
+  }
+
+  // ── 新建记录本弹窗 ──
+  function openCreateModal(e) {
+    if (e) e.stopPropagation();
+    showModal(
+      _t('newNotebook'),
+      '<input type="text" id="modalInput" placeholder="' + _t('newNotebookPlaceholder') + '" maxlength="30">',
+      _t('saveBtn'), _t('cancel'),
+      () => {
+        const input = document.getElementById('modalInput');
+        const name = input.value.trim();
+        if (!name) return;
+        notebooks.push({ id: genId(), name, items: [] });
+        saveNotebooks();
+        currentView = notebooks[notebooks.length - 1].id;
+        closeModal();
+        render();
+      }
+    );
+  }
+
+  // ── 确认删除弹窗 ──
+  function confirmDeleteNotebook(nbId, nbName) {
+    showModal(
+      _t('deleteNotebook'),
+      '<div style="font-size:14px;color:var(--text);text-align:center;line-height:1.6;padding:8px 0;">' + _t('deleteNotebookMsg') + '<strong>' + escapeHtml(nbName) + '</strong>' + _t('deleteNotebookSuffix') + '<br><span style="font-size:12px;color:var(--muted);">' + _t('deleteNotebookHint') + '</span></div>',
+      _t('confirmDelete'), _t('cancel'),
+      () => {
+        notebooks = notebooks.filter(n => n.id !== nbId);
+        saveNotebooks();
+        if (currentView === nbId) currentView = 'daily';
+        closeModal();
+        render();
+      },
+      true
+    );
+  }
+  function switchToNb(nbId) {
+    if (currentView === nbId) {
+      currentView = 'daily';
+    } else {
+      currentView = nbId;
+    }
+    whisperEditMode = false;
+    document.getElementById('inputTask').value = '';
+    render();
+  }
+  // ── 心里话 ──
+  function createWhisper(e) {
+    if (e) e.stopPropagation();
+    currentView = 'whisper-new';
+    whisperEditMode = true;
+    render();
+  }
+  function toggleWhisperEntry(viewId) {
+    if (currentView === viewId) { currentView = 'daily'; whisperEditMode = false; }
+    else { currentView = viewId; whisperEditMode = false; }
+    render();
+  }
+  function editWhisperEntry() {
+    whisperEditMode = true;
+    render();
+  }
+  function cancelWhisperEdit() {
+    whisperEditMode = false;
+    if (currentView === 'whisper-new') currentView = 'daily';
+    render();
+  }
+
+  function saveWhisperEntry(entryId) {
+    const titleInput = document.getElementById('whisperTitleInput').value.trim();
+    const titleAuto = !titleInput;
+    const title = titleInput || formatDate(todayStr());
+    const content = document.getElementById('whisperContentInput').value.trim();
+    if (!content) return;
+    if (entryId) {
+      const w = whisperEntries.find(w => w.id === entryId);
+      if (w) { w.title = title; w.titleAuto = titleAuto; w.content = content; }
+    } else {
+      const newEntry = { id: genId(), title, titleAuto, content, date: todayStr() };
+      whisperEntries.push(newEntry);
+      currentView = 'wh_' + newEntry.id;
+    }
+    saveWhisper();
+    whisperEditMode = false;
+    render();
+  }
+  function deleteWhisperEntry(id) {
+    showModal(_t('deleteWhisper'), '<div style="font-size:14px;color:var(--text);text-align:center;padding:8px 0;">' + _t('deleteItemMsg') + '</div>', _t('confirmDelete'), _t('cancel'),
+      () => { whisperEntries = whisperEntries.filter(w => w.id !== id); saveWhisper(); currentView = 'daily'; whisperEditMode = false; closeModal(); render(); }, true);
+  }
+
+  // ── 心里话编辑器视图 ──
+  function renderWhisperEdit(entryId) {
+    const w = entryId ? whisperEntries.find(w => w.id === entryId) : null;
+    document.getElementById('centerTitle').textContent = '💭 ' + _t('whisper');
+    document.getElementById('add-bar').style.display = 'none';
+    ['emptyState','statsBar'].forEach(id => { const e = document.getElementById(id); if (e) e.style.display = 'none'; });
+    const kbdHint = document.querySelector('.kbd-hint'); if (kbdHint) kbdHint.style.display = 'none';
+    const taskList = document.getElementById('taskList');
+    taskList.style.overflow = 'visible';
+
+    taskList.innerHTML = '<div class="whisper-edit">' +
+      '<input type="text" id="whisperTitleInput" placeholder="' + _t('titlePlaceholder') + '" maxlength="50" value="' + (w ? (w.titleAuto ? '' : escapeHtml(w.title)) : '') + '">' +
+      '<textarea id="whisperContentInput" placeholder="' + _t('whisperPlaceholder') + '">' + (w ? escapeHtml(w.content) : '') + '</textarea>' +
+      '<div class="we-row">' +
+      (entryId
+        ? '<button class="we-cancel" onclick="cancelWhisperEdit()">' + _t('cancelBtn') + '</button><button class="we-cancel" style="color:var(--danger);" onclick="deleteWhisperEntry(\'' + entryId + '\')">' + _t('deleteBtn') + '</button>'
+        : '<button class="we-cancel" onclick="cancelWhisperEdit()">' + _t('cancelBtn') + '</button>') +
+      '<button class="we-save" onclick="saveWhisperEntry(\'' + (entryId || '') + '\')">' + (entryId ? _t('updateBtn') : _t('saveBtn')) + '</button>' +
+      '</div></div>';
+    document.getElementById('whisperContentInput').focus();
+  }
+
+  // ── 心里话详情视图（只读云朵卡片）──
+  function renderWhisperView(entryId) {
+    const w = whisperEntries.find(w => w.id === entryId);
+    if (!w) { currentView = 'daily'; render(); return; }
+    if (whisperEditMode) { renderWhisperEdit(entryId); return; }
+
+    document.getElementById('centerTitle').textContent = '💭 ' + _t('whisper');
+    document.getElementById('add-bar').style.display = 'none';
+    ['emptyState','statsBar'].forEach(id => { const e = document.getElementById(id); if (e) e.style.display = 'none'; });
+    const kbdHint = document.querySelector('.kbd-hint'); if (kbdHint) kbdHint.style.display = 'none';
+    const taskList = document.getElementById('taskList');
+    taskList.style.overflow = 'visible';
+
+    taskList.innerHTML = '<div class="whisper-cloud">' +
+      '<div class="wc-actions">' +
+      '<button onclick="editWhisperEntry()">' + _t('editBtn') + '</button>' +
+      '<button onclick="deleteWhisperEntry(\'' + w.id + '\')">' + _t('deleteBtn') + '</button>' +
+      '</div>' +
+      '<div class="wc-title">' + escapeHtml(w.titleAuto ? formatDateShort(w.date) : w.title) + '</div>' +
+      '<div class="wc-body">' + escapeHtml(w.content) + '</div>' +
+      '<div class="wc-date">' + formatDate(w.date) + '</div>' +
+      '</div>';
+  }
+  function renameNotebook(nbId) {
+    const nb = notebooks.find(n => n.id === nbId);
+    if (!nb) return;
+    showModal(_t('renameNotebook'),
+      '<input type="text" id="modalInput" placeholder="' + _t('renamePlaceholder') + '" maxlength="30" value="' + escapeHtml(nb.name) + '">',
+      _t('saveBtn'), _t('cancel'),
+      () => {
+        const input = document.getElementById('modalInput');
+        const name = input.value.trim();
+        if (!name) return;
+        nb.name = name;
+        saveNotebooks();
+        closeModal();
+        render();
+      }
+    );
+  }
+
+  function deleteNotebook(e, nbId) {
+    e.stopPropagation();
+    const nb = notebooks.find(n => n.id === nbId);
+    confirmDeleteNotebook(nbId, nb ? nb.name : '');
+  }
+
+  // ── 往日回顾 ──
+  function renderPrevDays() {
+    const container = document.getElementById('prevDays');
+    const today = todayStr();
+    let hasAny = false;
+    let html = '<div class="prev-days-title">' + t('prevReview') + '</div>';
+    for (let i = 1; i <= 7; i++) {
+      const ds = addDays(today, -i);
+      const dayTasks = tasks.filter(t => t.date === ds);
+      if (dayTasks.length === 0) continue;
+      hasAny = true;
+      const label = formatDate(ds);
+      const taskHtml = dayTasks.map((dt, idx) => {
+        const icon = dt.done ? '●' : '○';
+        const ic = dt.done ? 'done' : 'undone';
+        const tc = dt.done ? 'strikethrough' : '';
+        const actionBar = !dt.done
+          ? '<span class="prev-action-bar"><span class="prev-overdue">' + _t('overdue') + '</span><button class="btn-defer" onclick="event.stopPropagation();deferTask(\'' + dt.id + '\')">' + _t('defer') + '</button></span>' : '';
+        return `<div class="prev-task">
+          <span class="prev-check ${ic}">${icon}</span>
+          <span class="prev-num">${idx + 1}</span>
+          <span class="prev-text ${tc}">${escapeHtml(dt.text)}</span>${actionBar}</div>`;
+      }).join('');
+      html += `<div class="prev-day-group" onclick="jumpToDate('${ds}')"><div class="prev-day-label">${label}</div>${taskHtml}</div>`;
+    }
+    if (!hasAny) html += '<div style="font-size:11px;color:#d5d2cc;text-align:center;padding:8px 0;">' + _t('emptyPrev') + '</div>';
+    container.innerHTML = html;
+  }
+
+  function jumpToDate(dateStr) {
+    currentDate = dateStr;
+    currentView = 'daily';
+    calYear = new Date(dateStr + 'T00:00:00').getFullYear();
+    calMonth = new Date(dateStr + 'T00:00:00').getMonth();
+    whisperEditMode = false;
+    render();
+  }
+
+  function escapeHtml(s) {
+    const d = document.createElement('div'); d.textContent = s; return d.innerHTML;
+  }
+
+  // ── 事件 ──
+  document.getElementById('btnPrev').addEventListener('click', () => {
+    currentDate = addDays(currentDate, -1);
+    currentView = 'daily';
+    if (calOpen) { calYear = new Date(currentDate+'T00:00:00').getFullYear(); calMonth = new Date(currentDate+'T00:00:00').getMonth(); }
+    render();
+  });
+  document.getElementById('btnNext').addEventListener('click', () => {
+    currentDate = addDays(currentDate, 1);
+    currentView = 'daily';
+    if (calOpen) { calYear = new Date(currentDate+'T00:00:00').getFullYear(); calMonth = new Date(currentDate+'T00:00:00').getMonth(); }
+    render();
+  });
+  document.getElementById('btnCalToggle').addEventListener('click', toggleCalendar);
+  document.getElementById('calOverlay').addEventListener('click', closeCalendar);
+
+  document.getElementById('btnDropPrevMonth').addEventListener('click', e => {
+    e.stopPropagation();
+    if (calMonth===0) { calMonth=11; calYear--; } else calMonth--;
+    renderCalendarGrid();
+  });
+  document.getElementById('btnDropNextMonth').addEventListener('click', e => {
+    e.stopPropagation();
+    if (calMonth===11) { calMonth=0; calYear++; } else calMonth++;
+    renderCalendarGrid();
+  });
+  document.getElementById('btnDropPrevYear').addEventListener('click', e => { e.stopPropagation(); calYear--; renderCalendarGrid(); });
+  document.getElementById('btnDropNextYear').addEventListener('click', e => { e.stopPropagation(); calYear++; renderCalendarGrid(); });
+  document.getElementById('calDropTitle').addEventListener('click', e => {
+    e.stopPropagation(); calYear=new Date().getFullYear(); calMonth=new Date().getMonth(); renderCalendarGrid();
+  });
+
+  document.getElementById('dateHeader').addEventListener('wheel', e => {
+    e.preventDefault();
+    currentDate = addDays(currentDate, e.deltaY > 0 ? 1 : -1);
+    currentView = 'daily';
+    if (calOpen) { calYear = new Date(currentDate+'T00:00:00').getFullYear(); calMonth = new Date(currentDate+'T00:00:00').getMonth(); }
+    render();
+  }, { passive: false });
+
+  // 添加按钮 —— 根据当前视图分发
+  document.getElementById('btnAdd').addEventListener('click', () => {
+    if (currentView === 'daily') addTask();
+    else if (currentView.startsWith('wh_') || currentView === 'whisper-new') { const wc = document.getElementById('whisperContentInput'); if (wc) wc.focus(); }
+    else addNbItem();
+  });
+  document.getElementById('inputTask').addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      if (currentView === 'daily') addTask();
+      else if (currentView.startsWith('wh_') || currentView === 'whisper-new') { const wc = document.getElementById('whisperContentInput'); if (wc) wc.focus(); }
+      else addNbItem();
+    }
+  });
+
+  // 记录本新建
+  document.getElementById('btnNbCreate').addEventListener('click', openCreateModal);
+
+  // ── 个人中心 ──
+  document.getElementById('btnPC').addEventListener('click', () => {
+    const accounts = getAccounts();
+    const curAccId = getLastId();
+    const curAcc = accounts.find(a => a.id === curAccId);
+    const accName = curAcc ? curAcc.name : _t('unknownAccount');
+    const accCnt = accounts.length;
+
+    const lang = getLang();
+    const appMode = localStorage.getItem('app_appearance') || 'light';
+    showModal(
+      '⚙ ' + t('personalCenter'),
+      `<div style="font-size:12px;color:var(--muted);text-align:center;margin-bottom:14px;">${accName}` + (accCnt > 1 ? ` (${accCnt} accounts)` : '') + `</div>
+      <div class="pc-panel">
+        <div class="pc-item" onclick="startOnboardingFromPC()"><span><span class="pc-icon">📖</span>${t('onboardingGuide')}</span><span class="pc-arrow">›</span></div>
+        <div class="pc-item" onclick="showVersionInfo()"><span><span class="pc-icon">ℹ️</span>${t('version')}</span><span class="pc-arrow">›</span></div>
+        <div class="pc-item" onclick="showPrivacyPolicy()"><span><span class="pc-icon">🔒</span>${t('privacy')}</span><span class="pc-arrow">›</span></div>
+        <div class="pc-item" onclick="cycleAppearance(event)" id="pcAppearance"><span><span class="pc-icon">🎨</span>${t('appearance')}</span><span class="pc-arrow" style="font-size:11px;">${appMode === 'dark' ? t('darkMode') : t('lightMode')}</span></div>
+        <div class="pc-item" onclick="cycleLanguage(event)" id="pcLanguage"><span><span class="pc-icon">🌐</span>${t('language')}</span><span class="pc-arrow" style="font-size:11px;">${lang === 'en' ? 'English' : '中文'}</span></div>
+        <div class="pc-item danger" onclick="deleteAccountFromPC()"><span><span class="pc-icon">🗑</span>${t('deleteAcc')}</span><span class="pc-arrow">›</span></div>
+      </div>`,
+      '', _t('close'), null
+    );
+  });
+
+  window.cycleAppearance = (e) => {
+    e.stopPropagation();
+    const cur = localStorage.getItem('app_appearance') || 'light';
+    const next = cur === 'light' ? 'dark' : 'light';
+    localStorage.setItem('app_appearance', next);
+    applyAppearance();
+    // Update the display inline
+    const el = document.getElementById('pcAppearance');
+    if (el) el.querySelector('.pc-arrow').textContent = next === 'dark' ? t('darkMode') : t('lightMode');
+  };
+  window.cycleLanguage = (e) => {
+    e.stopPropagation();
+    const cur = getLang();
+    const next = cur === 'zh' ? 'en' : 'zh';
+    setLang(next);
+    applyLanguage();
+    render(); // refresh the background UI
+    closeModal(); // close current PC
+    setTimeout(function(){ document.getElementById('btnPC').click(); }, 80); // reopen PC fresh
+  };
+
+  window.startOnboardingFromPC = () => {
+    closeModal();
+    localStorage.removeItem('onb');
+    startOnboarding();
+  };
+  window.showVersionInfo = () => {
+    pcReopenOnClose = true;
+    showModal(_t('version'), '<div style="font-size:13px;color:var(--text);text-align:center;line-height:1.8;padding:8px 0;">' + _t('versionInfo') + '<br><span style="font-size:11px;color:var(--muted);">' + _t('versionInfoDetail') + '<br>' + _t('versionInfoStorage') + '</span></div>', '', _t('close'), null);
+  };
+  window.showPrivacyPolicy = () => {
+    pcReopenOnClose = true;
+    showModal(_t('privacy'), '<div style="font-size:12px;color:var(--text);line-height:1.7;max-height:50vh;overflow-y:auto;padding:4px 0;text-align:left;">' + _t('privacyText') + '</div>', '', _t('close'), null);
+  };
+  window.deleteAccountFromPC = () => {
+    closeModal();
+    const accounts = getAccounts();
+    const curAccId = getLastId();
+    const curAcc = accounts.find(a => a.id === curAccId);
+    if (!curAcc) return;
+    showModal(_t('deleteAccount'),
+      '<div style="font-size:14px;color:var(--text);text-align:center;line-height:1.6;padding:8px 0;">' + _t('deleteAccountMsg') + '<strong>' + escapeHtml(curAcc.name) + '</strong>' + _t('deleteAccountSuffix') + '<br><span style="font-size:12px;color:var(--muted);">' + _t('deleteAccountHint') + '</span></div>',
+      _t('confirmDelete'), _t('cancel'), () => {
+        let accs = getAccounts().filter(a => a.id !== curAccId);
+        saveAccounts(accs);
+        localStorage.removeItem(PLAN_KEY); localStorage.removeItem(NB_KEY); localStorage.removeItem(WHISPER_DATA_KEY);
+        localStorage.removeItem('onb'); sessionStorage.removeItem('suo');
+        closeModal();
+        if (accs.length > 0) { setLastId(accs[0].id); location.reload(); }
+        else { setLastId(''); localStorage.removeItem('app_last'); location.reload(); }
+      }, true);
+  };
+  document.getElementById('btnWhisperCreate').addEventListener('click', createWhisper);
+  document.getElementById('whisperTitle').addEventListener('click', () => {
+    if (currentView !== 'daily') { currentView = 'daily'; whisperEditMode = false; document.getElementById('inputTask').value = ''; render(); }
+  });
+  document.getElementById('nbTitle').addEventListener('click', () => {
+    if (currentView !== 'daily') { currentView = 'daily'; whisperEditMode = false; document.getElementById('inputTask').value = ''; render(); }
+  });
+
+  // 键盘快捷键
+  document.addEventListener('keydown', e => {
+    if (e.ctrlKey || e.metaKey) return;
+    if (document.activeElement.tagName === 'INPUT' && (document.activeElement.id === 'inputTask' || document.activeElement.id === 'modalInput')) return;
+    if (e.key === 'ArrowLeft')  {
+      currentDate = addDays(currentDate, -1);
+      currentView = 'daily';
+      if (calOpen) { calYear = new Date(currentDate+'T00:00:00').getFullYear(); calMonth = new Date(currentDate+'T00:00:00').getMonth(); }
+      render();
+    }
+    if (e.key === 'ArrowRight') {
+      currentDate = addDays(currentDate, 1);
+      currentView = 'daily';
+      if (calOpen) { calYear = new Date(currentDate+'T00:00:00').getFullYear(); calMonth = new Date(currentDate+'T00:00:00').getMonth(); }
+      render();
+    }
+    if (e.key === 't' || e.key === 'T') {
+      currentDate = todayStr();
+      calYear = new Date().getFullYear(); calMonth = new Date().getMonth();
+      currentView = 'daily';
+      render();
+    }
+    if (e.key === 'n' || e.key === 'N') {
+      if (currentView.startsWith('wh_') || currentView === 'whisper-new') {
+        const wc = document.getElementById('whisperContentInput');
+        if (wc) { wc.focus(); e.preventDefault(); }
+      } else {
+        document.getElementById('inputTask').focus(); e.preventDefault();
+      }
+    }
+    if (e.key === 'Escape') {
+      if (document.getElementById('modalOverlay').classList.contains('show')) closeModal();
+      else if (calOpen) closeCalendar();
+    }
+  });
+
+  // ── 启动 ──
+  startup().then(() => {
+    document.getElementById('inputTask').focus();
+  });
+</script>
+</body>
+</html>
